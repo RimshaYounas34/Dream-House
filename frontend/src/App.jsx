@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -12,18 +11,24 @@ import MyDesigns from "./pages/MyDesigns";
 import Templates from "./pages/Templates";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
-const ThreeDView = lazy(() => import("./pages/ThreeDView"));
+import ThreeDView from "./pages/ThreeDView";
 import DesignMethod from "./pages/DesignMethod";
 import AdminDashboard from "./pages/AdminDashboard";
+import Users from "./pages/Users";
+import AIUsage from "./pages/AIUsage";
+import Reports from "./pages/Reports";
+import AdminSettings from "./pages/AdminSettings";
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/admin/users" element={<Users />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/admin" element={<AdminDashboard />} />
-<Route path="/3d-view" element={<Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#dfe4dc] text-sm text-[#315348]">Building 3D model...</div>}><ThreeDView /></Suspense>} />
+<Route path="/3d-view" element={<ThreeDView />} />
+<Route path="/admin/ai-usage" element={<AIUsage />} />
 <Route path="/design-method" element={<DesignMethod />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/create-project" element={<CreateProject />} />
@@ -33,6 +38,8 @@ function App() {
         <Route path="/templates" element={<Templates />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/help" element={<Help />} />
+       <Route path="/admin/reports" element={<Reports />} />
+       <Route path="/admin/settings" element={<AdminSettings />} />
       </Routes>
     </BrowserRouter>
   );
