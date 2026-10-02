@@ -11,6 +11,8 @@ import { validatePlan } from "../utils/planValidation.js";
 
 import { applyOperations } from "../utils/planOperations.js";
 
+import { logAiUsage, featureFromOperations } from "../utils/aiUsageLogger.js";
+
 function validatedPlan(result) {
   const checked = validatePlan(result);
 
@@ -27,7 +29,7 @@ function validatedPlan(result) {
 /**
  * Generate a brand-new house plan
  */
-export async function generate(req, res) {
+async function generateHandler(req, res) {
   const prompt = req.body?.prompt?.trim();
 
   if (!prompt) {
@@ -74,7 +76,7 @@ export async function generate(req, res) {
  * "Move the kitchen near the living room"
  * "Remove the garage"
  */
-export async function modify(req, res) {
+async function modifyHandler(req, res) {
   const command = req.body?.command?.trim();
 
   if (!command) {
@@ -107,6 +109,9 @@ export async function modify(req, res) {
   const operations = Array.isArray(aiResult?.operations)
     ? aiResult.operations
     : [];
+
+  // usage logger is se feature ka naam nikalta hai
+  res.locals.operations = operations;
 
   /*
    * Apply Gemini's operations to the current plan.
@@ -175,7 +180,7 @@ export async function modify(req, res) {
 /**
  * Analyze an uploaded floor-plan image
  */
-export async function analyzeImage(req, res) {
+async function analyzeImageHandler(req, res) {
   if (!req.file) {
     return res.status(400).json({
       success: false,
@@ -209,4 +214,59 @@ export async function analyzeImage(req, res) {
       .unlink(req.file.path)
       .catch(() => {});
   }
+}
+
+/* =========================================================
+   USAGE LOGGING
+   Har successful / failed AI request AiUsage collection me
+   save hoti hai (Admin -> AI Usage aur Reports pages ke liye)
+========================================================= */
+function withUsageLog(handler, describe) {
+  return async (req, res, next) => {
+    const startedAt = Date.now();
+
+    try {
+      await handler(req, res, next);
+
+      // 400 jaisi validation errors (empty prompt etc.) log nahi hoti
+      if (res.statusCode < 400) {
+        await logAiUsage(req, { ...describe(req, res), success: true, startedAt });
+      }
+    } catch (error) {
+      await logAiUsage(req, {
+        ...describe(req, res),
+        success: false,
+        errorMessage: error.message,
+        startedAt,
+      });
+
+      throw error;
+    }
+  };
+}
+
+export const generate = withUsageLog(generateHandler, (req) => ({
+  feature: "AI Floor Plan Generator",
+  action: "generate",
+  prompt: req.body?.prompt,
+}));
+
+export const modify = withUsageLog(modifyHandler, (req, res) => ({
+  feature: featureFromOperations(res.locals.operations || []),
+  action: "edit-command",
+  prompt: req.body?.command,
+}));
+
+export const analyzeImage = withUsageLog(analyzeImageHandler, () => ({
+  feature: "Image Analysis",
+  action: "analyze-image",
+}));
+
+/**
+ * 3D Generation backend ka AI call nahi hai, is liye frontend
+ * jab 3D view generate kare to POST /api/ai/usage { feature: "3D Generation" } bheje.
+ */
+export async function track3dGeneration(req, res) {
+  await logAiUsage(req, { feature: "3D Generation", action: "3d-generate" });
+  res.status(201).json({ success: true });
 }

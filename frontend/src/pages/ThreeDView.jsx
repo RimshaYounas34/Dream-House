@@ -7,7 +7,7 @@ import {
   TransformControls,
 } from "@react-three/drei";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getProject, updateProject } from "../services/projectApi";
+import { createProject, getProject, updateProject } from "../services/projectApi";
 import { normalizeFloorPlan, planFromLocationState } from "../utils/planNormalizer";
 import { materialFor, textureFor } from "../utils/materials";
 
@@ -955,6 +955,9 @@ function CameraSetup({ controlsRef, preset = "exterior", target = [5.8, 0, 4.7] 
    MAIN
 ========================================================= */
 
+// Refresh karne par bhi pata rahe ke ye design kis project ka hai (duplicate project na bane)
+const CURRENT_PROJECT_KEY = "dreamhouse_current_project_id";
+
 export default function ThreeDView() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -978,6 +981,10 @@ export default function ThreeDView() {
   const [showCeilings, setShowCeilings] = useState(false);
   const [cameraPreset, setCameraPreset] = useState("dollhouse");
   const [renderMode, setRenderMode] = useState("edit");
+  // Cloud project ka id: pehli save par bantaa hai, uske baad har save usi ko update karti hai
+  const [projectId, setProjectId] = useState(location.state?.projectId || null);
+  const [saveFeedback, setSaveFeedback] = useState({ type: "idle", text: "" });
+  const glRef = useRef(null);
 
   const updateRoomStyle = (field, value) => {
     setPlan((current) => ({ ...current, rooms: current.rooms.map((room) => room.id === selected ? { ...room, [field]: value } : room) }));
@@ -991,12 +998,73 @@ export default function ThreeDView() {
     setPlan((current) => ({ ...current, furniture: current.furniture.map((piece) => piece.id === id ? { ...piece, x: Math.round(position.x / SCALE - piece.width / 2), y: Math.round(position.z / SCALE - piece.height / 2) } : piece) }));
   };
 
-  const saveDesign = async () => {
-    const projectId = location.state?.projectId;
-    if (projectId && localStorage.getItem("dreamhouse_token")) {
-      await updateProject(projectId, { floorPlanData: plan, versionDescription: "Updated from 3D viewer" });
+  // Dashboard card ke liye 3D scene ki chhoti si photo (JPEG, ~480px)
+  const captureThumbnail = () => {
+    try {
+      const source = glRef.current?.domElement;
+      if (!source || !source.width) return "";
+      const width = 480;
+      const out = document.createElement("canvas");
+      out.width = width;
+      out.height = Math.max(Math.round((source.height / source.width) * width), 1);
+      out.getContext("2d").drawImage(source, 0, 0, out.width, out.height);
+      return out.toDataURL("image/jpeg", 0.7);
+    } catch {
+      return "";
     }
+  };
+
+  const saveDesign = async () => {
+    if (saveFeedback.type === "saving") return;
+
+    // Local backup hamesha (refresh / login ke baad design wapas mil jaye)
     localStorage.setItem("dreamhouse_current_plan", JSON.stringify(plan));
+
+    if (!rooms.length) {
+      setSaveFeedback({ type: "error", text: "There is nothing to save yet. Add rooms in the 2D editor first." });
+      return;
+    }
+
+    if (!localStorage.getItem("dreamhouse_token")) {
+      setSaveFeedback({ type: "login", text: "Log in to save this design to your dashboard. Your work is kept on this device." });
+      return;
+    }
+
+    setSaveFeedback({ type: "saving", text: "Saving to your dashboard…" });
+
+    const floorPlanData = {
+      ...plan,
+      lighting: { ...plan.lighting, mode: lightingMode },
+      // Admin panel ko pata chalta hai ke ye design 3D mein bhi save hua
+      settings: { ...plan.settings, created3D: true, last3DSavedAt: new Date().toISOString() },
+    };
+    const name = plan.project?.name?.trim() || "My Dream House";
+    const thumbnail = captureThumbnail();
+
+    try {
+      if (projectId) {
+        await updateProject(projectId, {
+          name,
+          floorPlanData,
+          ...(thumbnail ? { thumbnail } : {}),
+          versionDescription: "Updated from 3D viewer",
+        });
+      } else {
+        const created = await createProject({ name, floorPlanData, thumbnail });
+        setProjectId(created._id);
+        localStorage.setItem(CURRENT_PROJECT_KEY, created._id);
+      }
+
+      setSaveFeedback({ type: "saved", text: "Saved to your dashboard." });
+      setTimeout(() => setSaveFeedback((current) => (current.type === "saved" ? { type: "idle", text: "" } : current)), 6000);
+    } catch (error) {
+      const expired = /session expired|authentication|invalid authentication|no longer exists/i.test(error.message || "");
+      setSaveFeedback(
+        expired
+          ? { type: "login", text: "Your session has expired. Log in again to save." }
+          : { type: "error", text: `Could not save: ${error.message || "please try again."}` }
+      );
+    }
   };
 
   /* ===============================================
@@ -1005,6 +1073,14 @@ export default function ThreeDView() {
 
   useEffect(() => {
     const state = location.state;
+
+    if (state) {
+      setProjectId(state.projectId || null);
+      if (state.projectId) localStorage.setItem(CURRENT_PROJECT_KEY, state.projectId);
+      else localStorage.removeItem(CURRENT_PROJECT_KEY); // naya, abhi tak save na hua design
+    } else {
+      setProjectId(localStorage.getItem(CURRENT_PROJECT_KEY) || null);
+    }
 
     if (!state) {
       // Direct refresh: use the latest locally saved 2D design if available.
@@ -1144,9 +1220,9 @@ export default function ThreeDView() {
           <select value={cameraPreset} onChange={(event) => setCameraPreset(event.target.value)} className="rounded-full border border-white/70 bg-white/90 px-3 py-2.5 text-[10px] font-bold text-[#315348] shadow-lg backdrop-blur-xl"><option value="dollhouse">Dollhouse</option><option value="exterior">Exterior</option><option value="front">Front</option><option value="rear">Rear</option><option value="top">Bird's-eye</option><option value="site">Site</option><option value="interior">Interior</option></select>
           {plan.floors.length > 1 && <select value={activeFloor} onChange={(event) => setActiveFloor(Number(event.target.value))} className="rounded-full border border-white/70 bg-white/90 px-3 py-2.5 text-[10px] font-bold text-[#315348] shadow-lg backdrop-blur-xl">{plan.floors.map((floor) => <option key={floor.id} value={floor.level}>Floor {floor.level + 1}</option>)}</select>}
           <button onClick={() => setShowCeilings((value) => !value)} className="rounded-full border border-white/70 bg-white/90 px-3 py-2.5 text-[10px] font-bold text-[#315348] shadow-lg backdrop-blur-xl">{showCeilings ? "Hide ceiling" : "Show ceiling"}</button>
-          <button onClick={saveDesign} className="rounded-full border border-white/70 bg-white/90 px-4 py-2.5 text-[10px] font-bold text-[#315348] shadow-lg backdrop-blur-xl">Save</button>
+          <button onClick={saveDesign} disabled={saveFeedback.type === "saving"} className="rounded-full border border-white/70 bg-white/90 px-4 py-2.5 text-[10px] font-bold text-[#315348] shadow-lg backdrop-blur-xl disabled:opacity-60">{saveFeedback.type === "saving" ? "Saving…" : saveFeedback.type === "saved" ? "Saved ✓" : "Save"}</button>
           <button
-            onClick={() => navigate("/floor-plan-editor", { state: location.state?.projectId ? { projectId: location.state.projectId } : undefined })}
+            onClick={() => navigate("/floor-plan-editor", { state: projectId ? { projectId } : undefined })}
             className="rounded-full border border-white/70 bg-white/90 px-4 py-2.5 text-[10px] font-bold text-[#315348] shadow-lg backdrop-blur-xl"
           >
             ← 2D Editor
@@ -1165,8 +1241,19 @@ export default function ThreeDView() {
           3D
       ========================================= */}
 
+      {saveFeedback.type !== "idle" && (
+        <div role="status" className="absolute left-1/2 top-24 z-50 flex max-w-[92vw] -translate-x-1/2 items-center gap-3 rounded-2xl border border-white/70 bg-white/95 px-4 py-3 text-[11px] font-medium text-[#315348] shadow-xl backdrop-blur-xl">
+          <span>{saveFeedback.text}</span>
+          {saveFeedback.type === "saved" && <button onClick={() => navigate("/dashboard")} className="rounded-full bg-[#174c3d] px-3 py-1.5 text-[10px] font-bold text-white">View in dashboard</button>}
+          {saveFeedback.type === "login" && <button onClick={() => navigate("/login")} className="rounded-full bg-[#174c3d] px-3 py-1.5 text-[10px] font-bold text-white">Log in</button>}
+          {saveFeedback.type !== "saving" && <button onClick={() => setSaveFeedback({ type: "idle", text: "" })} aria-label="Dismiss" className="text-base leading-none text-[#69746d]">×</button>}
+        </div>
+      )}
+
       <Canvas
         shadows
+        gl={{ preserveDrawingBuffer: true }}
+        onCreated={({ gl }) => { glRef.current = gl; }}
         dpr={renderMode === "visualization" ? [1.5, 2] : [1, 1.5]}
         camera={{
           position: [12, 12, 14],

@@ -89,7 +89,7 @@ function AdminSidebar({ navigate, active, logout }) {
     { label: "Templates", icon: "template", path: "/templates" },
     { label: "AI Usage", icon: "ai", path: "/admin/ai-usage" },
     { label: "Reports", icon: "report", path: "/admin/reports" },
-    { label: "Settings", icon: "settings", path: "/settings" },
+    { label: "Settings", icon: "settings", path: "/admin/settings" },
   ];
 
   return (
