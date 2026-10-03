@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { apiRequest } from "../services/api";
 
 const menu = [
   { label: "Dashboard", icon: "▦", path: "/admin" },
@@ -19,52 +20,179 @@ const featureNames = [
   "3D Generation",
 ];
 
-function readUsage() {
-  try {
-    const data = JSON.parse(
-      localStorage.getItem("dreamhouse_ai_usage") || "[]"
-    );
-
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
-
 export default function AIUsage() {
   const location = useLocation();
-  const [usage, setUsage] = useState(readUsage);
+
+  const [usage, setUsage] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  /* =========================================================
+     LOAD REAL AI USAGE FROM MONGODB
+  ========================================================= */
 
   useEffect(() => {
-    const refresh = () => setUsage(readUsage());
+    let mounted = true;
 
-    window.addEventListener("storage", refresh);
-    window.addEventListener("dreamhouse-ai-usage-updated", refresh);
+    const loadUsage = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await apiRequest(
+          "/admin/ai-usage/logs"
+        );
+
+        const data =
+          response?.data ||
+          response ||
+          {};
+
+        /*
+          Support different backend response shapes.
+        */
+        const logs = Array.isArray(data)
+          ? data
+          : Array.isArray(data.logs)
+          ? data.logs
+          : Array.isArray(data.items)
+          ? data.items
+          : Array.isArray(data.results)
+          ? data.results
+          : Array.isArray(data.aiLogs)
+          ? data.aiLogs
+          : [];
+
+        if (mounted) {
+          setUsage(logs);
+        }
+      } catch (err) {
+        console.error(
+          "AI usage loading error:",
+          err
+        );
+
+        if (mounted) {
+          setError(
+            err?.message ||
+              "AI usage data could not be loaded."
+          );
+
+          setUsage([]);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadUsage();
 
     return () => {
-      window.removeEventListener("storage", refresh);
-      window.removeEventListener("dreamhouse-ai-usage-updated", refresh);
+      mounted = false;
     };
   }, []);
+
+  /* =========================================================
+     NORMALIZE FEATURE NAME
+  ========================================================= */
+
+  const getFeatureName = (item) => {
+    const feature =
+      item?.feature ||
+      item?.featureName ||
+      item?.type ||
+      "";
+
+    const action =
+      item?.action ||
+      item?.actionType ||
+      "";
+
+    const featureText = String(feature).toLowerCase();
+    const actionText = String(action).toLowerCase();
+
+    if (
+      featureText.includes("floor") ||
+      featureText.includes("generate") ||
+      actionText === "generate"
+    ) {
+      return "AI Floor Plan Generator";
+    }
+
+    if (
+      featureText.includes("edit") ||
+      actionText.includes("edit-command")
+    ) {
+      return "AI Edit Commands";
+    }
+
+    if (
+      featureText.includes("add room") ||
+      actionText.includes("add-room")
+    ) {
+      return "Add Room Commands";
+    }
+
+    if (
+      featureText.includes("move room") ||
+      actionText.includes("move-room")
+    ) {
+      return "Move Room Commands";
+    }
+
+    if (
+      featureText.includes("delete room") ||
+      actionText.includes("delete-room")
+    ) {
+      return "Delete Room Commands";
+    }
+
+    if (
+      featureText.includes("3d") ||
+      featureText.includes("three") ||
+      actionText.includes("3d")
+    ) {
+      return "3D Generation";
+    }
+
+    return feature || "AI Activity";
+  };
+
+  /* =========================================================
+     STATS
+  ========================================================= */
 
   const stats = useMemo(() => {
     const total = usage.length;
 
-    const plans = usage.filter(
-      (item) =>
-        item.feature === "AI Floor Plan Generator" ||
-        item.action === "generate"
-    ).length;
+    const plans = usage.filter((item) => {
+      const feature = getFeatureName(item);
 
-    const commands = usage.filter(
-      (item) =>
-        item.feature === "AI Edit Commands" ||
-        item.action === "edit-command"
-    ).length;
+      return (
+        feature === "AI Floor Plan Generator" ||
+        item?.action === "generate"
+      );
+    }).length;
+
+    const commands = usage.filter((item) => {
+      const feature = getFeatureName(item);
+
+      return (
+        feature === "AI Edit Commands" ||
+        item?.action === "edit-command"
+      );
+    }).length;
 
     const users = new Set(
       usage
-        .map((item) => item.userId || item.email)
+        .map(
+          (item) =>
+            item?.userId ||
+            item?.email ||
+            item?.user?.email
+        )
         .filter(Boolean)
     ).size;
 
@@ -76,12 +204,22 @@ export default function AIUsage() {
     };
   }, [usage]);
 
+  /* =========================================================
+     FEATURE STATS
+  ========================================================= */
+
   const featureStats = useMemo(() => {
     return featureNames.map((feature) => ({
       name: feature,
-      count: usage.filter((item) => item.feature === feature).length,
+      count: usage.filter(
+        (item) => getFeatureName(item) === feature
+      ).length,
     }));
   }, [usage]);
+
+  /* =========================================================
+     DAILY USAGE
+  ========================================================= */
 
   const dailyUsage = useMemo(() => {
     const days = [];
@@ -89,21 +227,38 @@ export default function AIUsage() {
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
 
-      date.setDate(date.getDate() - i);
+      date.setDate(
+        date.getDate() - i
+      );
 
-      const key = date.toISOString().slice(0, 10);
+      const key = date
+        .toISOString()
+        .slice(0, 10);
 
       const count = usage.filter((item) => {
-        if (!item.createdAt) return false;
+        const createdAt =
+          item?.createdAt ||
+          item?.timestamp ||
+          item?.date;
 
-        return String(item.createdAt).slice(0, 10) === key;
+        if (!createdAt) {
+          return false;
+        }
+
+        return (
+          String(createdAt).slice(0, 10) ===
+          key
+        );
       }).length;
 
       days.push({
         date: key,
-        label: date.toLocaleDateString("en-US", {
-          weekday: "short",
-        }),
+        label: date.toLocaleDateString(
+          "en-US",
+          {
+            weekday: "short",
+          }
+        ),
         count,
       });
     }
@@ -112,24 +267,40 @@ export default function AIUsage() {
   }, [usage]);
 
   const maxUsage = Math.max(
-    ...dailyUsage.map((item) => item.count),
+    ...dailyUsage.map(
+      (item) => item.count
+    ),
     1
   );
+
+  /* =========================================================
+     ACTIVE USERS
+  ========================================================= */
 
   const activeUsers = useMemo(() => {
     const map = {};
 
     usage.forEach((item) => {
       const key =
-        item.email ||
-        item.userId ||
-        item.userName ||
+        item?.email ||
+        item?.user?.email ||
+        item?.userId ||
+        item?.userName ||
+        item?.user?.name ||
         "Unknown User";
 
       if (!map[key]) {
         map[key] = {
-          name: item.userName || "Registered User",
-          email: item.email || key,
+          name:
+            item?.userName ||
+            item?.user?.name ||
+            "Registered User",
+
+          email:
+            item?.email ||
+            item?.user?.email ||
+            key,
+
           count: 0,
         };
       }
@@ -138,17 +309,29 @@ export default function AIUsage() {
     });
 
     return Object.values(map)
-      .sort((a, b) => b.count - a.count)
+      .sort(
+        (a, b) =>
+          b.count - a.count
+      )
       .slice(0, 5);
   }, [usage]);
+
+  /* =========================================================
+     UI
+  ========================================================= */
 
   return (
     <div className="min-h-screen bg-[#f3f0e5] text-[#173d32]">
       {/* SIDEBAR */}
+
       <aside className="fixed left-0 top-0 z-30 flex h-screen w-[250px] flex-col bg-[#12382e] text-white shadow-2xl">
-        {/* Logo */}
+        {/* LOGO */}
+
         <div className="border-b border-white/10 px-7 py-7">
-          <Link to="/" className="block">
+          <Link
+            to="/"
+            className="block"
+          >
             <div className="font-serif text-[26px] tracking-tight">
               DreamHouse
             </div>
@@ -159,7 +342,8 @@ export default function AIUsage() {
           </Link>
         </div>
 
-        {/* Menu */}
+        {/* MENU */}
+
         <nav className="flex-1 px-4 py-6">
           <p className="px-4 pb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#86a89a]">
             Main Menu
@@ -168,7 +352,8 @@ export default function AIUsage() {
           <div className="space-y-1.5">
             {menu.map((item) => {
               const active =
-                location.pathname === item.path;
+                location.pathname ===
+                item.path;
 
               return (
                 <Link
@@ -190,7 +375,9 @@ export default function AIUsage() {
                     {item.icon}
                   </span>
 
-                  <span>{item.label}</span>
+                  <span>
+                    {item.label}
+                  </span>
 
                   {active && (
                     <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#12382e]" />
@@ -201,7 +388,8 @@ export default function AIUsage() {
           </div>
         </nav>
 
-        {/* Bottom */}
+        {/* BOTTOM */}
+
         <div className="border-t border-white/10 p-4">
           <Link
             to="/"
@@ -212,7 +400,10 @@ export default function AIUsage() {
             </span>
 
             <div>
-              <div>Visit Website</div>
+              <div>
+                Visit Website
+              </div>
+
               <div className="text-[10px] text-[#91b1a4]">
                 Back to DreamHouse
               </div>
@@ -222,8 +413,10 @@ export default function AIUsage() {
       </aside>
 
       {/* MAIN */}
+
       <main className="ml-[250px] min-h-screen">
         {/* TOP BAR */}
+
         <header className="sticky top-0 z-20 border-b border-[#d6ddd3] bg-[#f3f0e5]/95 px-8 py-5 backdrop-blur">
           <div className="flex items-center justify-between">
             <div>
@@ -249,9 +442,31 @@ export default function AIUsage() {
         </header>
 
         <div className="p-8">
+          {/* ERROR */}
+
+          {error && (
+            <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[11px] text-red-700">
+              <span>
+                {error}
+              </span>
+
+              <button
+                type="button"
+                onClick={() =>
+                  window.location.reload()
+                }
+                className="font-semibold underline"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
           {/* INTRO */}
+
           <section className="relative overflow-hidden rounded-[28px] bg-[#174235] p-7 text-white shadow-xl">
             <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-[#75a895]/20 blur-2xl" />
+
             <div className="absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-[#9cbea9]/10 blur-3xl" />
 
             <div className="relative">
@@ -272,39 +487,58 @@ export default function AIUsage() {
           </section>
 
           {/* STAT CARDS */}
+
           <section className="mt-7 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               title="Total AI Requests"
-              value={stats.total}
+              value={
+                loading
+                  ? "—"
+                  : stats.total
+              }
               icon="✦"
               tone="dark"
             />
 
             <StatCard
               title="Plans Generated"
-              value={stats.plans}
+              value={
+                loading
+                  ? "—"
+                  : stats.plans
+              }
               icon="⌂"
               tone="green"
             />
 
             <StatCard
               title="AI Edit Commands"
-              value={stats.commands}
+              value={
+                loading
+                  ? "—"
+                  : stats.commands
+              }
               icon="✎"
               tone="cream"
             />
 
             <StatCard
               title="Active AI Users"
-              value={stats.users}
+              value={
+                loading
+                  ? "—"
+                  : stats.users
+              }
               icon="♙"
               tone="sage"
             />
           </section>
 
           {/* ANALYTICS + FEATURES */}
+
           <section className="mt-7 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
             {/* CHART */}
+
             <div className="rounded-[26px] border border-[#d4ddd4] bg-[#fbfaf4] p-6 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
@@ -328,7 +562,9 @@ export default function AIUsage() {
                     item.count === 0
                       ? 8
                       : Math.max(
-                          (item.count / maxUsage) * 175,
+                          (item.count /
+                            maxUsage) *
+                            175,
                           16
                         );
 
@@ -356,15 +592,17 @@ export default function AIUsage() {
                 })}
               </div>
 
-              {usage.length === 0 && (
-                <div className="mt-5 rounded-2xl bg-[#edf2eb] px-4 py-3 text-center text-[11px] text-[#678076]">
-                  No AI activity recorded yet. The chart will update when
-                  users start using AI features.
-                </div>
-              )}
+              {!loading &&
+                usage.length === 0 && (
+                  <div className="mt-5 rounded-2xl bg-[#edf2eb] px-4 py-3 text-center text-[11px] text-[#678076]">
+                    No AI activity recorded yet. The chart will update when
+                    users start using AI features.
+                  </div>
+                )}
             </div>
 
             {/* FEATURES */}
+
             <div className="rounded-[26px] border border-[#d4ddd4] bg-[#fbfaf4] p-6 shadow-sm">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#789086]">
@@ -377,39 +615,42 @@ export default function AIUsage() {
               </div>
 
               <div className="mt-6 space-y-3">
-                {featureStats.map((feature, index) => (
-                  <div
-                    key={feature.name}
-                    className="group rounded-2xl border border-[#dbe2da] bg-[#eef2eb] p-3 transition hover:border-[#9db9aa] hover:bg-[#e4ece4]"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[13px] font-bold ${
-                            index % 2 === 0
-                              ? "bg-[#173f34] text-white"
-                              : "bg-[#c6d9cd] text-[#173f34]"
-                          }`}
-                        >
-                          ✦
+                {featureStats.map(
+                  (feature, index) => (
+                    <div
+                      key={feature.name}
+                      className="group rounded-2xl border border-[#dbe2da] bg-[#eef2eb] p-3 transition hover:border-[#9db9aa] hover:bg-[#e4ece4]"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[13px] font-bold ${
+                              index % 2 === 0
+                                ? "bg-[#173f34] text-white"
+                                : "bg-[#c6d9cd] text-[#173f34]"
+                            }`}
+                          >
+                            ✦
+                          </div>
+
+                          <span className="truncate text-[11px] font-semibold text-[#345a4c]">
+                            {feature.name}
+                          </span>
                         </div>
 
-                        <span className="truncate text-[11px] font-semibold text-[#345a4c]">
-                          {feature.name}
+                        <span className="rounded-full bg-white px-3 py-1 text-[10px] font-bold text-[#315c4d] shadow-sm">
+                          {feature.count}
                         </span>
                       </div>
-
-                      <span className="rounded-full bg-white px-3 py-1 text-[10px] font-bold text-[#315c4d] shadow-sm">
-                        {feature.count}
-                      </span>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             </div>
           </section>
 
           {/* USERS */}
+
           <section className="mt-7 rounded-[26px] border border-[#d4ddd4] bg-[#fbfaf4] p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -431,44 +672,52 @@ export default function AIUsage() {
               <div className="mt-6 overflow-hidden rounded-2xl border border-[#dce3dc]">
                 <div className="grid grid-cols-[1.5fr_1.5fr_100px] bg-[#e7eee7] px-5 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#678076]">
                   <span>User</span>
+
                   <span>Email</span>
-                  <span className="text-right">Requests</span>
+
+                  <span className="text-right">
+                    Requests
+                  </span>
                 </div>
 
-                {activeUsers.map((user, index) => (
-                  <div
-                    key={user.email}
-                    className="grid grid-cols-[1.5fr_1.5fr_100px] items-center border-t border-[#e1e6e0] px-5 py-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#173f34] text-[11px] font-bold text-white">
-                        {(user.name || "U")
-                          .charAt(0)
-                          .toUpperCase()}
+                {activeUsers.map(
+                  (user, index) => (
+                    <div
+                      key={user.email}
+                      className="grid grid-cols-[1.5fr_1.5fr_100px] items-center border-t border-[#e1e6e0] px-5 py-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#173f34] text-[11px] font-bold text-white">
+                          {(user.name ||
+                            "U")
+                            .charAt(0)
+                            .toUpperCase()}
+                        </div>
+
+                        <div>
+                          <p className="text-[12px] font-semibold text-[#254c40]">
+                            {user.name}
+                          </p>
+
+                          <p className="text-[10px] text-[#81938a]">
+                            User #
+                            {index + 1}
+                          </p>
+                        </div>
                       </div>
 
-                      <div>
-                        <p className="text-[12px] font-semibold text-[#254c40]">
-                          {user.name}
-                        </p>
-
-                        <p className="text-[10px] text-[#81938a]">
-                          User #{index + 1}
-                        </p>
-                      </div>
-                    </div>
-
-                    <span className="text-[11px] text-[#61786d]">
-                      {user.email}
-                    </span>
-
-                    <div className="text-right">
-                      <span className="rounded-full bg-[#dce9e1] px-3 py-1 text-[10px] font-bold text-[#315c4d]">
-                        {user.count}
+                      <span className="text-[11px] text-[#61786d]">
+                        {user.email}
                       </span>
+
+                      <div className="text-right">
+                        <span className="rounded-full bg-[#dce9e1] px-3 py-1 text-[10px] font-bold text-[#315c4d]">
+                          {user.count}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             ) : (
               <div className="mt-6 rounded-[22px] border border-dashed border-[#b8c9bd] bg-[#e9efe8] px-6 py-12 text-center">
@@ -477,18 +726,22 @@ export default function AIUsage() {
                 </div>
 
                 <h4 className="mt-4 font-serif text-[21px] text-[#173d32]">
-                  No AI activity yet
+                  {loading
+                    ? "Loading AI activity..."
+                    : "No AI activity yet"}
                 </h4>
 
                 <p className="mx-auto mt-2 max-w-md text-[12px] leading-5 text-[#71857c]">
-                  AI usage will appear here automatically when registered
-                  users generate plans or use AI editing commands.
+                  {loading
+                    ? "Fetching recorded AI activity from your database."
+                    : "AI usage will appear here automatically when registered users generate plans or use AI editing commands."}
                 </p>
               </div>
             )}
           </section>
 
           {/* BOTTOM INFO */}
+
           <section className="mt-7 grid gap-5 md:grid-cols-2">
             <div className="rounded-[24px] bg-[#dbe8df] p-6">
               <div className="flex items-start gap-4">
@@ -517,12 +770,12 @@ export default function AIUsage() {
 
                 <div>
                   <h4 className="font-serif text-[20px]">
-                    No demo statistics
+                    Live database statistics
                   </h4>
 
                   <p className="mt-1 text-[11px] leading-5 text-[#b9d0c5]">
-                    This dashboard only displays recorded AI activity from
-                    your application.
+                    This dashboard displays recorded AI activity from your
+                    application's MongoDB database.
                   </p>
                 </div>
               </div>
@@ -534,7 +787,16 @@ export default function AIUsage() {
   );
 }
 
-function StatCard({ title, value, icon, tone }) {
+/* =========================================================
+   STAT CARD
+========================================================= */
+
+function StatCard({
+  title,
+  value,
+  icon,
+  tone,
+}) {
   const styles = {
     dark: "bg-[#173f34] text-white",
     green: "bg-[#d9e7de] text-[#173d32]",

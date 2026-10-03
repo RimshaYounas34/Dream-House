@@ -10,6 +10,7 @@ import authRoutes from "./routes/authRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 
@@ -58,6 +59,8 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/ai", aiRoutes);
 
 app.use("/api/admin", adminRoutes);
+
+app.use("/api/contact", contactRoutes);
 
 /* =========================
    ERROR HANDLING

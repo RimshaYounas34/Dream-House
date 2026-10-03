@@ -1,9 +1,9 @@
-
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase";
 import loginFloorplan from "../assets/login-floorplan.jpg";
+import { apiRequest } from "../services/api";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -21,9 +21,25 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
 
   // ============================================
-  // NORMAL EMAIL/PASSWORD SIGNUP
+  // CLEAR AUTH SESSION
+  // Manual signup ke baad user logged-in nahi hoga.
   // ============================================
-  const handleSignup = (e) => {
+  const clearAuthSession = () => {
+    localStorage.removeItem("dreamhouse_token");
+    localStorage.removeItem("dreamhouse_name");
+    localStorage.removeItem("dreamhouse_email");
+    localStorage.removeItem("dreamhouse_role");
+    localStorage.removeItem("dreamhouse_logged_in");
+    localStorage.removeItem("dreamhouse_auth_provider");
+    localStorage.removeItem("dreamhouse_photo");
+    localStorage.removeItem("dreamhouse_password");
+  };
+
+  // ============================================
+  // NORMAL EMAIL/PASSWORD SIGNUP
+  // Create Account -> Login Page
+  // ============================================
+  const handleSignup = async (e) => {
     e.preventDefault();
 
     if (
@@ -36,8 +52,8 @@ export default function Signup() {
       return;
     }
 
-    if (password.length < 6) {
-      alert("Password must be at least 6 characters.");
+    if (password.length < 8) {
+      alert("Password must be at least 8 characters.");
       return;
     }
 
@@ -46,80 +62,60 @@ export default function Signup() {
       return;
     }
 
-    const existingUsers =
-      JSON.parse(
-        localStorage.getItem("dreamhouse_users")
-      ) || [];
+    try {
+      setLoading(true);
 
-    const cleanEmail = email.trim().toLowerCase();
+      const response = await apiRequest("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
 
-    const emailExists = existingUsers.some(
-      (user) =>
-        user.email?.toLowerCase() === cleanEmail
-    );
+      const user = response?.data?.user;
 
-    if (emailExists) {
-      alert("An account with this email already exists.");
-      return;
+      if (!user) {
+        throw new Error("Account could not be created.");
+      }
+
+      // ============================================
+      // IMPORTANT:
+      // Manual signup par token save NAHI karna.
+      // User ko pehle Login karna hoga.
+      // ============================================
+      clearAuthSession();
+
+      alert(
+        "Account created successfully! Please log in to continue."
+      );
+
+      // ============================================
+      // MANUAL SIGNUP -> LOGIN PAGE
+      // ============================================
+      navigate("/login", {
+        replace: true,
+        state: {
+          signupSuccess: true,
+          email: email.trim().toLowerCase(),
+        },
+      });
+    } catch (error) {
+      console.error("Signup Error:", error);
+
+      alert(
+        error.message ||
+          "Unable to create your account. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(true);
-
-    const newUser = {
-      id: Date.now(),
-      name: name.trim(),
-      email: cleanEmail,
-      password: password,
-      role: "User",
-      status: "Active",
-      projects: 0,
-      lastLogin: new Date().toLocaleDateString(),
-      joined: new Date().toLocaleDateString(),
-      authProvider: "Email",
-    };
-
-    localStorage.setItem(
-      "dreamhouse_users",
-      JSON.stringify([
-        ...existingUsers,
-        newUser,
-      ])
-    );
-
-    localStorage.setItem(
-      "dreamhouse_name",
-      newUser.name
-    );
-
-    localStorage.setItem(
-      "dreamhouse_email",
-      newUser.email
-    );
-
-    localStorage.setItem(
-      "dreamhouse_password",
-      newUser.password
-    );
-
-    localStorage.setItem(
-      "dreamhouse_role",
-      "User"
-    );
-
-    localStorage.setItem(
-      "dreamhouse_logged_in",
-      "true"
-    );
-
-    setLoading(false);
-
-    alert("Account created successfully!");
-
-    navigate("/dashboard");
   };
 
   // ============================================
   // GOOGLE SIGN UP
+  // Google -> Direct Dashboard
   // ============================================
   const handleGoogleSignup = async () => {
     try {
@@ -131,90 +127,72 @@ export default function Signup() {
         prompt: "select_account",
       });
 
-      const result = await signInWithPopup(
-        auth,
-        provider
-      );
+      const result = await signInWithPopup(auth, provider);
 
-      const user = result.user;
+      const firebaseUser = result.user;
 
-      const existingUsers =
-        JSON.parse(
-          localStorage.getItem("dreamhouse_users")
-        ) || [];
-
-      const cleanEmail =
-        user.email?.toLowerCase();
-
-      const existingUser = existingUsers.find(
-        (item) =>
-          item.email?.toLowerCase() === cleanEmail
-      );
-
-      if (!existingUser) {
-        const newUser = {
-          id: Date.now(),
-          name:
-            user.displayName ||
-            "Google User",
-          email: user.email || "",
-          role: "User",
-          status: "Active",
-          projects: 0,
-          lastLogin:
-            new Date().toLocaleDateString(),
-          joined:
-            new Date().toLocaleDateString(),
-          authProvider: "Google",
-          photoURL:
-            user.photoURL || "",
-        };
-
-        localStorage.setItem(
-          "dreamhouse_users",
-          JSON.stringify([
-            ...existingUsers,
-            newUser,
-          ])
-        );
-      } else {
-        const updatedUsers =
-          existingUsers.map((item) =>
-            item.email?.toLowerCase() ===
-            cleanEmail
-              ? {
-                  ...item,
-                  lastLogin:
-                    new Date().toLocaleDateString(),
-                  status: "Active",
-                  photoURL:
-                    user.photoURL ||
-                    item.photoURL ||
-                    "",
-                }
-              : item
-          );
-
-        localStorage.setItem(
-          "dreamhouse_users",
-          JSON.stringify(updatedUsers)
+      if (!firebaseUser) {
+        throw new Error(
+          "Google account information could not be retrieved."
         );
       }
 
+      // Firebase ID token
+      const firebaseIdToken =
+        await firebaseUser.getIdToken();
+
+      if (!firebaseIdToken) {
+        throw new Error(
+          "Google authentication token could not be generated."
+        );
+      }
+
+      // ============================================
+      // SEND GOOGLE TOKEN TO BACKEND
+      // ============================================
+      const response = await apiRequest("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({
+          idToken: firebaseIdToken,
+        }),
+      });
+
+      const user = response?.data?.user;
+      const backendToken = response?.data?.token;
+
+      if (!user || !backendToken) {
+        throw new Error(
+          "Google authentication succeeded, but application session could not be created."
+        );
+      }
+
+      // ============================================
+      // GOOGLE LOGIN SESSION
+      // Google user ko direct dashboard ke liye
+      // backend JWT save karna zaroori hai.
+      // ============================================
+      localStorage.setItem(
+        "dreamhouse_token",
+        backendToken
+      );
+
       localStorage.setItem(
         "dreamhouse_name",
-        user.displayName ||
+        user.name ||
+          firebaseUser.displayName ||
           "Google User"
       );
 
       localStorage.setItem(
         "dreamhouse_email",
-        user.email || ""
+        user.email ||
+          firebaseUser.email ||
+          ""
       );
 
       localStorage.setItem(
         "dreamhouse_role",
-        "User"
+        user.role || "user"
       );
 
       localStorage.setItem(
@@ -224,22 +202,41 @@ export default function Signup() {
 
       localStorage.setItem(
         "dreamhouse_auth_provider",
-        "Google"
+        user.authProvider || "google"
       );
 
-      if (user.photoURL) {
+      // Password kabhi store nahi karna
+      localStorage.removeItem("dreamhouse_password");
+
+      if (user.photoURL || firebaseUser.photoURL) {
         localStorage.setItem(
           "dreamhouse_photo",
-          user.photoURL
+          user.photoURL ||
+            firebaseUser.photoURL ||
+            ""
         );
       }
 
-      alert("Google sign-in successful!");
+      // Old localStorage users system remove
+      localStorage.removeItem("dreamhouse_users");
 
-      navigate("/dashboard");
+      // ============================================
+      // GOOGLE -> DIRECT DASHBOARD
+      // ============================================
+      const role = user.role || "user";
+
+      if (role.toLowerCase() === "admin") {
+        navigate("/admin", {
+          replace: true,
+        });
+      } else {
+        navigate("/dashboard", {
+          replace: true,
+        });
+      }
     } catch (error) {
       console.error(
-        "Google Sign-In Error:",
+        "Google Sign-Up Error:",
         error
       );
 
@@ -270,6 +267,16 @@ export default function Signup() {
         return;
       }
 
+      if (
+        error.code ===
+        "auth/operation-not-allowed"
+      ) {
+        alert(
+          "Google Sign-In is not enabled in Firebase."
+        );
+        return;
+      }
+
       alert(
         error.message ||
           "Google sign-in failed. Please try again."
@@ -281,7 +288,6 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen bg-[#f6f5ef] text-[#173d32]">
-
       <div className="grid min-h-screen lg:grid-cols-[1.08fr_0.92fr]">
 
         {/* =====================================================
@@ -289,21 +295,17 @@ export default function Signup() {
         ====================================================== */}
         <section className="relative hidden min-h-screen overflow-hidden bg-[#173d32] lg:flex">
 
-          {/* Your Image */}
           <img
             src={loginFloorplan}
             alt="Dream House Floor Plan"
             className="absolute inset-0 h-full w-full object-cover"
           />
 
-          {/* Elegant Overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#102e27]/85 via-[#173d32]/45 to-black/30" />
 
-          {/* Decorative glow */}
           <div className="absolute -left-28 top-24 h-80 w-80 rounded-full bg-[#dce9dc]/10 blur-3xl" />
 
           <div className="absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-[#dce9dc]/10 blur-3xl" />
-
 
           {/* Logo */}
           <div className="relative z-10 flex min-h-screen w-full flex-col justify-between p-10 xl:p-14">
@@ -312,9 +314,7 @@ export default function Signup() {
               to="/"
               className="flex w-fit items-center gap-3 text-white"
             >
-
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md">
-
                 <svg
                   width="22"
                   height="22"
@@ -329,11 +329,9 @@ export default function Signup() {
                   <path d="M5.5 10.5V20h13v-9.5" />
                   <path d="M9.5 20v-5h5v5" />
                 </svg>
-
               </div>
 
               <div>
-
                 <p className="font-serif text-lg font-semibold">
                   DreamHouse
                 </p>
@@ -341,37 +339,28 @@ export default function Signup() {
                 <p className="text-[9px] uppercase tracking-[0.28em] text-white/60">
                   Planner
                 </p>
-
               </div>
-
             </Link>
-
 
             {/* Center content */}
             <div className="max-w-[520px]">
 
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-lg">
-
                 <span className="h-1.5 w-1.5 rounded-full bg-[#dce9dc]" />
 
                 <span className="text-[9px] font-semibold uppercase tracking-[0.25em] text-white/90">
                   Start Your Journey
                 </span>
-
               </div>
 
-
               <h1 className="font-serif text-[45px] leading-[1.06] text-white sm:text-[50px] xl:text-[60px]">
-
                 Your dream home
                 <br />
 
                 <span className="text-[#dce9dc]">
                   starts with a plan.
                 </span>
-
               </h1>
-
 
               <p className="mt-6 max-w-[440px] text-[13px] leading-7 text-white/75">
                 Create personalized floor plans, organize
@@ -379,12 +368,10 @@ export default function Signup() {
                 with smart 2D, 3D and AI-powered tools.
               </p>
 
-
               {/* Feature cards */}
               <div className="mt-9 grid max-w-[450px] grid-cols-3 gap-2.5">
 
                 <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
-
                   <div className="mb-2 font-serif text-2xl text-white">
                     2D
                   </div>
@@ -392,12 +379,9 @@ export default function Signup() {
                   <p className="text-[9px] uppercase tracking-wider text-white/55">
                     Floor Plans
                   </p>
-
                 </div>
 
-
                 <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
-
                   <div className="mb-2 font-serif text-2xl text-white">
                     3D
                   </div>
@@ -405,12 +389,9 @@ export default function Signup() {
                   <p className="text-[9px] uppercase tracking-wider text-white/55">
                     Visualization
                   </p>
-
                 </div>
 
-
                 <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
-
                   <div className="mb-2 font-serif text-2xl text-white">
                     AI
                   </div>
@@ -418,17 +399,14 @@ export default function Signup() {
                   <p className="text-[9px] uppercase tracking-wider text-white/55">
                     Smart Planning
                   </p>
-
                 </div>
 
               </div>
-
 
               {/* Bottom architectural card */}
               <div className="mt-8 flex w-fit items-center gap-3 rounded-2xl border border-white/15 bg-black/15 px-4 py-3 backdrop-blur-md">
 
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
-
                   <svg
                     width="18"
                     height="18"
@@ -443,11 +421,9 @@ export default function Signup() {
                     <path d="M8 19v-5h8v5" />
                     <path d="M8 10h8" />
                   </svg>
-
                 </div>
 
                 <div>
-
                   <p className="text-xs font-medium text-white">
                     Design around your lifestyle.
                   </p>
@@ -455,29 +431,23 @@ export default function Signup() {
                   <p className="mt-0.5 text-[10px] text-white/50">
                     Every room starts with your idea.
                   </p>
-
                 </div>
 
               </div>
 
             </div>
 
-
             {/* Bottom */}
             <div className="flex items-center justify-between">
-
               <p className="text-[9px] uppercase tracking-[0.25em] text-white/45">
                 Imagine • Plan • Create
               </p>
 
               <div className="h-px w-20 bg-white/20" />
-
             </div>
 
           </div>
-
         </section>
-
 
         {/* =====================================================
             RIGHT SIGNUP PANEL
@@ -493,7 +463,6 @@ export default function Signup() {
             >
 
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#173d32] text-white">
-
                 <svg
                   width="20"
                   height="20"
@@ -508,11 +477,9 @@ export default function Signup() {
                   <path d="M5.5 10.5V20h13v-9.5" />
                   <path d="M9.5 20v-5h5v5" />
                 </svg>
-
               </div>
 
               <div>
-
                 <p className="font-serif text-lg font-semibold">
                   DreamHouse
                 </p>
@@ -520,23 +487,19 @@ export default function Signup() {
                 <p className="text-[9px] uppercase tracking-[0.2em] text-[#71837b]">
                   Planner
                 </p>
-
               </div>
 
             </Link>
-
 
             {/* Heading */}
             <div className="mb-6">
 
               <div className="mb-3 flex items-center gap-2">
-
                 <span className="h-1.5 w-1.5 rounded-full bg-[#173d32]" />
 
                 <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#71827b]">
                   Get Started
                 </span>
-
               </div>
 
               <h2 className="font-serif text-[32px] leading-tight text-[#173d32] sm:text-[36px]">
@@ -549,7 +512,6 @@ export default function Signup() {
               </p>
 
             </div>
-
 
             {/* Signup Card */}
             <div className="rounded-[26px] border border-[#dfe4dd] bg-white p-6 shadow-[0_22px_65px_rgba(23,61,50,0.08)] sm:p-7">
@@ -571,9 +533,11 @@ export default function Signup() {
                 ) : (
                   <>
                     <span className="flex h-5 w-5 items-center justify-center text-[17px] font-bold">
+
                       <span className="bg-gradient-to-r from-[#4285F4] via-[#34A853] to-[#EA4335] bg-clip-text text-transparent">
                         G
                       </span>
+
                     </span>
 
                     Continue with Google
@@ -581,7 +545,6 @@ export default function Signup() {
                 )}
 
               </button>
-
 
               {/* Divider */}
               <div className="my-5 flex items-center gap-3">
@@ -595,7 +558,6 @@ export default function Signup() {
                 <div className="h-px flex-1 bg-[#e1e4df]" />
 
               </div>
-
 
               {/* Form */}
               <form
@@ -624,7 +586,6 @@ export default function Signup() {
 
                 </div>
 
-
                 {/* Email */}
                 <div>
 
@@ -645,7 +606,6 @@ export default function Signup() {
                   />
 
                 </div>
-
 
                 {/* Password */}
                 <div>
@@ -692,7 +652,6 @@ export default function Signup() {
 
                 </div>
 
-
                 {/* Confirm Password */}
                 <div>
 
@@ -738,7 +697,6 @@ export default function Signup() {
 
                 </div>
 
-
                 {/* Terms */}
                 <p className="pt-1 text-[9px] leading-5 text-[#7d8983]">
 
@@ -763,7 +721,6 @@ export default function Signup() {
                   .
 
                 </p>
-
 
                 {/* Create Account */}
                 <button
@@ -806,7 +763,6 @@ export default function Signup() {
 
               </form>
 
-
               {/* Login */}
               <div className="mt-5 rounded-xl border border-[#e0e4de] bg-[#f8f9f5] px-4 py-3.5 text-center">
 
@@ -827,7 +783,6 @@ export default function Signup() {
 
             </div>
 
-
             {/* Footer */}
             <p className="mt-4 text-center text-[9px] leading-5 text-[#929b96]">
               Secure account creation · DreamHouse Planner
@@ -838,7 +793,6 @@ export default function Signup() {
         </section>
 
       </div>
-
     </div>
   );
 }

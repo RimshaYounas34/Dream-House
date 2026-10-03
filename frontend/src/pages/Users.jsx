@@ -1,6 +1,7 @@
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiRequest } from "../services/api";
 
 /* =========================================================
    ICON
@@ -78,20 +79,6 @@ const Icon = ({ name, size = 18 }) => {
       </>
     ),
 
-    filter: (
-      <>
-        <path d="M4 6h16M7 12h10M10 18h4" />
-      </>
-    ),
-
-    more: (
-      <>
-        <circle cx="5" cy="12" r="1" fill="currentColor" />
-        <circle cx="12" cy="12" r="1" fill="currentColor" />
-        <circle cx="19" cy="12" r="1" fill="currentColor" />
-      </>
-    ),
-
     eye: (
       <>
         <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
@@ -130,6 +117,15 @@ const Icon = ({ name, size = 18 }) => {
     close: (
       <>
         <path d="m6 6 12 12M18 6 6 18" />
+      </>
+    ),
+
+    refresh: (
+      <>
+        <path d="M20 11a8 8 0 0 0-14.8-4L3 10" />
+        <path d="M3 4v6h6" />
+        <path d="M4 13a8 8 0 0 0 14.8 4L21 14" />
+        <path d="M21 20v-6h-6" />
       </>
     ),
   };
@@ -235,103 +231,28 @@ function AdminSidebar({ navigate, active, logout }) {
 }
 
 /* =========================================================
-   DEMO USERS
-========================================================= */
-
-const INITIAL_USERS = [
-  {
-    id: 1,
-    name: "Ayesha Khan",
-    email: "ayesha@gmail.com",
-    role: "User",
-    status: "Active",
-    projects: 4,
-    lastLogin: "Today, 10:42 AM",
-    joined: "Sep 26, 2026",
-  },
-  {
-    id: 2,
-    name: "Hassan Ali",
-    email: "hassan@gmail.com",
-    role: "User",
-    status: "Active",
-    projects: 7,
-    lastLogin: "Today, 09:18 AM",
-    joined: "Sep 25, 2026",
-  },
-  {
-    id: 3,
-    name: "Rimsha Tariq",
-    email: "rimsha@gmail.com",
-    role: "User",
-    status: "Active",
-    projects: 3,
-    lastLogin: "Yesterday",
-    joined: "Sep 24, 2026",
-  },
-  {
-    id: 4,
-    name: "Sara Ahmed",
-    email: "sara@gmail.com",
-    role: "User",
-    status: "Inactive",
-    projects: 5,
-    lastLogin: "Sep 26, 2026",
-    joined: "Sep 22, 2026",
-  },
-  {
-    id: 5,
-    name: "Muhammad Hamza",
-    email: "hamza@gmail.com",
-    role: "User",
-    status: "Active",
-    projects: 9,
-    lastLogin: "Today, 08:51 AM",
-    joined: "Sep 20, 2026",
-  },
-  {
-    id: 6,
-    name: "Admin User",
-    email: "admin@dreamhouse.com",
-    role: "Admin",
-    status: "Active",
-    projects: 24,
-    lastLogin: "Today, 11:05 AM",
-    joined: "Sep 01, 2026",
-  },
-  {
-    id: 7,
-    name: "Fatima Noor",
-    email: "fatima@gmail.com",
-    role: "User",
-    status: "Active",
-    projects: 2,
-    lastLogin: "Sep 27, 2026",
-    joined: "Sep 19, 2026",
-  },
-  {
-    id: 8,
-    name: "Usman Raza",
-    email: "usman@gmail.com",
-    role: "User",
-    status: "Inactive",
-    projects: 1,
-    lastLogin: "Sep 20, 2026",
-    joined: "Sep 18, 2026",
-  },
-];
-
-/* =========================================================
    MAIN USERS PAGE
 ========================================================= */
 
 export default function Users() {
   const navigate = useNavigate();
 
-  const [users, setUsers] = useState(INITIAL_USERS);
+  const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    admins: 0,
+    newThisWeek: 0,
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
+
   const [selectedUser, setSelectedUser] = useState(null);
   const [showAddUser, setShowAddUser] = useState(false);
 
@@ -339,154 +260,448 @@ export default function Users() {
     name: "",
     email: "",
     role: "User",
+    password: "",
   });
 
+  /* =======================================================
+     LOGOUT
+  ======================================================= */
+
   const logout = () => {
+    localStorage.removeItem("dreamhouse_token");
     localStorage.removeItem("dreamhouse_logged_in");
     localStorage.removeItem("dreamhouse_role");
-    navigate("/login");
+    localStorage.removeItem("dreamhouse_name");
+    localStorage.removeItem("dreamhouse_user");
+
+    navigate("/login", { replace: true });
   };
 
   /* =======================================================
-     FILTER
+     FETCH USERS FROM MONGODB
+  ======================================================= */
+
+  const fetchUsers = async (showLoader = true) => {
+    try {
+      if (showLoader) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
+
+      setError("");
+
+      const params = new URLSearchParams();
+
+      if (search.trim()) {
+        params.set("search", search.trim());
+      }
+
+      if (roleFilter !== "All") {
+        params.set("role", roleFilter);
+      }
+
+      if (statusFilter !== "All") {
+        params.set("status", statusFilter);
+      }
+
+      params.set("page", "1");
+      params.set("limit", "500");
+
+      const response = await apiRequest(
+        `/admin/users?${params.toString()}`
+      );
+
+      if (!response?.success) {
+        throw new Error(
+          response?.message || "Unable to load users."
+        );
+      }
+
+      setUsers(Array.isArray(response.data) ? response.data : []);
+
+      setStats({
+        total: Number(response?.stats?.total || 0),
+        active: Number(response?.stats?.active || 0),
+        admins: Number(response?.stats?.admins || 0),
+        newThisWeek: Number(response?.stats?.newThisWeek || 0),
+      });
+    } catch (err) {
+      console.error("Users fetch error:", err);
+
+      if (
+        err?.message?.toLowerCase().includes("authentication") ||
+        err?.message?.toLowerCase().includes("token") ||
+        err?.message?.toLowerCase().includes("unauthorized")
+      ) {
+        localStorage.removeItem("dreamhouse_token");
+        localStorage.removeItem("dreamhouse_logged_in");
+        localStorage.removeItem("dreamhouse_role");
+
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      setError(
+        err?.message ||
+          "Unable to load users from the database."
+      );
+
+      setUsers([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  /* =======================================================
+     INITIAL LOAD
+  ======================================================= */
+
+  useEffect(() => {
+    fetchUsers(true);
+  }, []);
+
+  /* =======================================================
+     FILTER CHANGE
+  ======================================================= */
+
+  useEffect(() => {
+    if (loading) return;
+
+    const timer = setTimeout(() => {
+      fetchUsers(false);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [search, roleFilter, statusFilter]);
+
+  /* =======================================================
+     LOCAL SAFETY FILTER
   ======================================================= */
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
+      const text = search.trim().toLowerCase();
+
       const searchMatch =
-        user.name.toLowerCase().includes(search.toLowerCase()) ||
-        user.email.toLowerCase().includes(search.toLowerCase());
+        !text ||
+        String(user.name || "")
+          .toLowerCase()
+          .includes(text) ||
+        String(user.email || "")
+          .toLowerCase()
+          .includes(text);
 
       const roleMatch =
-        roleFilter === "All" || user.role === roleFilter;
+        roleFilter === "All" ||
+        String(user.role || "").toLowerCase() ===
+          roleFilter.toLowerCase();
 
       const statusMatch =
-        statusFilter === "All" || user.status === statusFilter;
+        statusFilter === "All" ||
+        String(user.status || "").toLowerCase() ===
+          statusFilter.toLowerCase();
 
       return searchMatch && roleMatch && statusMatch;
     });
   }, [users, search, roleFilter, statusFilter]);
 
   /* =======================================================
-     STATS
+     UPDATE STATUS
   ======================================================= */
 
-  const totalUsers = users.length;
+  const toggleStatus = async (user) => {
+    try {
+      setError("");
 
-  const activeUsers = users.filter(
-    (user) => user.status === "Active"
-  ).length;
+      const nextStatus =
+        user.status === "Active" ? "Inactive" : "Active";
 
-  const adminUsers = users.filter(
-    (user) => user.role === "Admin"
-  ).length;
+      const response = await apiRequest(
+        `/admin/users/${user.id}/status`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            status: nextStatus,
+          }),
+        }
+      );
 
-  const newUsers = users.filter((user) =>
-    user.joined.includes("Sep 2")
-  ).length;
+      if (!response?.success) {
+        throw new Error(
+          response?.message || "Unable to update user status."
+        );
+      }
+
+      const updatedUser = response.data;
+
+      setUsers((current) =>
+        current.map((item) =>
+          String(item.id) === String(user.id)
+            ? updatedUser
+            : item
+        )
+      );
+
+      setSelectedUser((current) =>
+        current &&
+        String(current.id) === String(user.id)
+          ? updatedUser
+          : current
+      );
+
+      setStats((current) => ({
+        ...current,
+        active:
+          nextStatus === "Active"
+            ? current.active + 1
+            : Math.max(0, current.active - 1),
+      }));
+    } catch (err) {
+      console.error("Status update error:", err);
+      setError(
+        err?.message || "Unable to update user status."
+      );
+    }
+  };
 
   /* =======================================================
-     ACTIONS
+     CHANGE ROLE
   ======================================================= */
 
-  const toggleStatus = (id) => {
-    setUsers((currentUsers) =>
-      currentUsers.map((user) =>
-        user.id === id
-          ? {
-              ...user,
-              status:
-                user.status === "Active"
-                  ? "Inactive"
-                  : "Active",
-            }
-          : user
-      )
-    );
-  };
+  const changeRole = async (user, role) => {
+    try {
+      setError("");
 
-  const changeRole = (id, role) => {
-    setUsers((currentUsers) =>
-      currentUsers.map((user) =>
-        user.id === id
-          ? { ...user, role }
-          : user
-      )
-    );
-
-    setSelectedUser((current) =>
-      current
-        ? {
-            ...current,
+      const response = await apiRequest(
+        `/admin/users/${user.id}/role`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
             role,
-          }
-        : null
-    );
+          }),
+        }
+      );
+
+      if (!response?.success) {
+        throw new Error(
+          response?.message || "Unable to update user role."
+        );
+      }
+
+      const updatedUser = response.data;
+
+      setUsers((current) =>
+        current.map((item) =>
+          String(item.id) === String(user.id)
+            ? updatedUser
+            : item
+        )
+      );
+
+      setSelectedUser(updatedUser);
+
+      setStats((current) => ({
+        ...current,
+        admins:
+          role === "Admin"
+            ? current.admins + 1
+            : Math.max(0, current.admins - 1),
+      }));
+    } catch (err) {
+      console.error("Role update error:", err);
+      setError(
+        err?.message || "Unable to update user role."
+      );
+    }
   };
 
-  const deleteUser = (id) => {
-    const user = users.find((item) => item.id === id);
+  /* =======================================================
+     DELETE USER
+  ======================================================= */
 
-    if (!user) return;
-
+  const deleteUser = async (user) => {
     const confirmed = window.confirm(
       `Delete ${user.name}? This action cannot be undone.`
     );
 
     if (!confirmed) return;
 
-    setUsers((currentUsers) =>
-      currentUsers.filter((item) => item.id !== id)
-    );
+    try {
+      setError("");
 
-    setSelectedUser(null);
+      const response = await apiRequest(
+        `/admin/users/${user.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response?.success) {
+        throw new Error(
+          response?.message || "Unable to delete user."
+        );
+      }
+
+      setUsers((current) =>
+        current.filter(
+          (item) => String(item.id) !== String(user.id)
+        )
+      );
+
+      setSelectedUser(null);
+
+      setStats((current) => ({
+        ...current,
+        total: Math.max(0, current.total - 1),
+        active:
+          user.status === "Active"
+            ? Math.max(0, current.active - 1)
+            : current.active,
+        admins:
+          user.role === "Admin"
+            ? Math.max(0, current.admins - 1)
+            : current.admins,
+      }));
+    } catch (err) {
+      console.error("Delete user error:", err);
+      setError(
+        err?.message || "Unable to delete user."
+      );
+    }
   };
 
-  const addUser = (event) => {
+  /* =======================================================
+     ADD USER
+  ======================================================= */
+
+  const addUser = async (event) => {
     event.preventDefault();
 
     if (!newUser.name.trim() || !newUser.email.trim()) {
-      alert("Please enter name and email.");
+      setError("Please enter name and email.");
       return;
     }
 
-    const createdUser = {
-      id: Date.now(),
-      name: newUser.name.trim(),
-      email: newUser.email.trim(),
-      role: newUser.role,
-      status: "Active",
-      projects: 0,
-      lastLogin: "Never",
-      joined: "Sep 28, 2026",
-    };
+    try {
+      setError("");
 
-    setUsers((currentUsers) => [
-      createdUser,
-      ...currentUsers,
-    ]);
+      const body = {
+        name: newUser.name.trim(),
+        email: newUser.email.trim().toLowerCase(),
+        role: newUser.role,
+      };
 
-    setNewUser({
-      name: "",
-      email: "",
-      role: "User",
-    });
+      if (newUser.password.trim()) {
+        body.password = newUser.password;
+      }
 
-    setShowAddUser(false);
+      const response = await apiRequest("/admin/users", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      if (!response?.success) {
+        throw new Error(
+          response?.message || "Unable to create user."
+        );
+      }
+
+      const createdUser = response.data;
+
+      setUsers((current) => [
+        createdUser,
+        ...current,
+      ]);
+
+      setStats((current) => ({
+        ...current,
+        total: current.total + 1,
+        active: current.active + 1,
+        admins:
+          newUser.role === "Admin"
+            ? current.admins + 1
+            : current.admins,
+      }));
+
+      setNewUser({
+        name: "",
+        email: "",
+        role: "User",
+        password: "",
+      });
+
+      setShowAddUser(false);
+
+      if (response.temporaryPassword) {
+        alert(
+          `User created successfully.\n\nTemporary password:\n${response.temporaryPassword}`
+        );
+      }
+    } catch (err) {
+      console.error("Create user error:", err);
+
+      setError(
+        err?.message || "Unable to create user."
+      );
+    }
   };
+
+  /* =======================================================
+     LOADING
+  ======================================================= */
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f4f3eb] text-[#173d32]">
+        <AdminSidebar
+          navigate={navigate}
+          active="/admin/users"
+          logout={logout}
+        />
+
+        <main className="min-h-screen lg:ml-[245px]">
+          <header className="flex min-h-[76px] items-center justify-between border-b border-[#d9dfd8] bg-[#f8f7f1] px-5 py-4 sm:px-8">
+            <div>
+              <p className="text-[9px] uppercase tracking-[2px] text-[#738079]">
+                Administration
+              </p>
+
+              <h1 className="font-serif text-[21px] font-semibold">
+                Users
+              </h1>
+            </div>
+
+            <div className="h-10 w-10 animate-pulse rounded-full bg-[#dfe8e1]" />
+          </header>
+
+          <div className="flex min-h-[calc(100vh-76px)] items-center justify-center p-8">
+            <div className="text-center">
+              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#d8e1da] border-t-[#173d32]" />
+
+              <p className="mt-4 text-[11px] font-medium text-[#718078]">
+                Loading users from database...
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  /* =======================================================
+     MAIN
+  ======================================================= */
 
   return (
     <div className="min-h-screen bg-[#f4f3eb] text-[#173d32]">
-
-      {/* SIDEBAR */}
 
       <AdminSidebar
         navigate={navigate}
         active="/admin/users"
         logout={logout}
       />
-
-      {/* MAIN */}
 
       <main className="min-h-screen lg:ml-[245px]">
 
@@ -522,7 +737,7 @@ export default function Users() {
 
         <div className="p-5 sm:p-7 xl:p-9">
 
-          {/* PAGE TITLE */}
+          {/* TITLE */}
 
           <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
 
@@ -536,51 +751,93 @@ export default function Users() {
               </p>
             </div>
 
-            <button
-              onClick={() => setShowAddUser(true)}
-              className="flex w-fit items-center gap-2 rounded-xl bg-[#173d32] px-4 py-3 text-[11px] font-semibold text-white transition hover:bg-[#28564a]"
-            >
-              <Icon name="plus" size={15} />
-              Add User
-            </button>
+            <div className="flex items-center gap-2">
+
+              <button
+                onClick={() => fetchUsers(false)}
+                disabled={refreshing}
+                className="flex items-center gap-2 rounded-xl border border-[#d9e1da] bg-white px-4 py-3 text-[11px] font-semibold text-[#52635a] transition hover:bg-[#f2f5f1] disabled:opacity-60"
+              >
+                <span
+                  className={
+                    refreshing ? "animate-spin" : ""
+                  }
+                >
+                  <Icon name="refresh" size={15} />
+                </span>
+
+                Refresh
+              </button>
+
+              <button
+                onClick={() => {
+                  setError("");
+                  setShowAddUser(true);
+                }}
+                className="flex w-fit items-center gap-2 rounded-xl bg-[#173d32] px-4 py-3 text-[11px] font-semibold text-white transition hover:bg-[#28564a]"
+              >
+                <Icon name="plus" size={15} />
+                Add User
+              </button>
+
+            </div>
 
           </div>
 
-          {/* STAT CARDS */}
+          {/* ERROR */}
+
+          {error && (
+            <div className="mb-5 flex items-start justify-between gap-4 rounded-xl border border-[#f0ceca] bg-[#fff4f2] px-4 py-3">
+
+              <p className="text-[11px] font-semibold text-[#a33d32]">
+                {error}
+              </p>
+
+              <button
+                onClick={() => setError("")}
+                className="text-[#a33d32]"
+              >
+                <Icon name="close" size={14} />
+              </button>
+
+            </div>
+          )}
+
+          {/* STATS */}
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 
             <UserStat
               title="Total Users"
-              value={totalUsers}
+              value={stats.total}
               subtitle="Registered accounts"
               icon="users"
             />
 
             <UserStat
               title="Active Users"
-              value={activeUsers}
+              value={stats.active}
               subtitle="Currently active"
               icon="users"
             />
 
             <UserStat
               title="New Users"
-              value={newUsers}
-              subtitle="Recently joined"
+              value={stats.newThisWeek}
+              subtitle="Joined in last 7 days"
               icon="plus"
             />
 
             <UserStat
               title="Admins"
-              value={adminUsers}
+              value={stats.admins}
               subtitle="Administrator accounts"
               icon="settings"
             />
 
           </div>
 
-          {/* USERS SECTION */}
+          {/* USERS */}
 
           <section className="mt-5 overflow-hidden rounded-2xl border border-[#dce2db] bg-white">
 
@@ -613,33 +870,29 @@ export default function Users() {
 
                 <div className="flex flex-wrap gap-2">
 
-                  <div className="relative">
-                    <select
-                      value={roleFilter}
-                      onChange={(event) =>
-                        setRoleFilter(event.target.value)
-                      }
-                      className="appearance-none rounded-xl border border-[#dfe5df] bg-[#fafbf8] px-4 py-3 pr-9 text-[10px] font-medium text-[#526158] outline-none"
-                    >
-                      <option value="All">All Roles</option>
-                      <option value="User">Users</option>
-                      <option value="Admin">Admins</option>
-                    </select>
-                  </div>
+                  <select
+                    value={roleFilter}
+                    onChange={(event) =>
+                      setRoleFilter(event.target.value)
+                    }
+                    className="appearance-none rounded-xl border border-[#dfe5df] bg-[#fafbf8] px-4 py-3 text-[10px] font-medium text-[#526158] outline-none"
+                  >
+                    <option value="All">All Roles</option>
+                    <option value="User">Users</option>
+                    <option value="Admin">Admins</option>
+                  </select>
 
-                  <div className="relative">
-                    <select
-                      value={statusFilter}
-                      onChange={(event) =>
-                        setStatusFilter(event.target.value)
-                      }
-                      className="appearance-none rounded-xl border border-[#dfe5df] bg-[#fafbf8] px-4 py-3 pr-9 text-[10px] font-medium text-[#526158] outline-none"
-                    >
-                      <option value="All">All Status</option>
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                    </select>
-                  </div>
+                  <select
+                    value={statusFilter}
+                    onChange={(event) =>
+                      setStatusFilter(event.target.value)
+                    }
+                    className="appearance-none rounded-xl border border-[#dfe5df] bg-[#fafbf8] px-4 py-3 text-[10px] font-medium text-[#526158] outline-none"
+                  >
+                    <option value="All">All Status</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
 
                 </div>
 
@@ -765,17 +1018,17 @@ export default function Users() {
                       <td className="px-4 py-4">
 
                         <span className="text-[10px] font-semibold text-[#53635b]">
-                          {user.projects}
+                          {user.projects ?? 0}
                         </span>
 
                       </td>
 
-                      {/* LAST LOGIN */}
+                      {/* LOGIN */}
 
                       <td className="px-4 py-4">
 
                         <span className="text-[9px] text-[#7d8982]">
-                          {user.lastLogin}
+                          {formatDate(user.lastLogin)}
                         </span>
 
                       </td>
@@ -808,7 +1061,7 @@ export default function Users() {
 
                           <button
                             onClick={() =>
-                              toggleStatus(user.id)
+                              toggleStatus(user)
                             }
                             title={
                               user.status === "Active"
@@ -822,7 +1075,7 @@ export default function Users() {
 
                           <button
                             onClick={() =>
-                              deleteUser(user.id)
+                              deleteUser(user)
                             }
                             title="Delete user"
                             className="rounded-lg p-2 text-[#8a6868] transition hover:bg-[#f8eded] hover:text-[#9a4040]"
@@ -857,7 +1110,9 @@ export default function Users() {
                   </h3>
 
                   <p className="mt-1 text-[10px] text-[#89938d]">
-                    Try changing your search or filters.
+                    {users.length === 0
+                      ? "There are no users available in the database."
+                      : "Try changing your search or filters."}
                   </p>
 
                 </div>
@@ -871,35 +1126,26 @@ export default function Users() {
             <div className="flex flex-col justify-between gap-3 border-t border-[#edf0eb] px-5 py-4 sm:flex-row sm:items-center">
 
               <p className="text-[9px] text-[#89938d]">
+
                 Showing{" "}
+
                 <span className="font-semibold text-[#53635b]">
                   {filteredUsers.length}
                 </span>{" "}
+
                 of{" "}
+
                 <span className="font-semibold text-[#53635b]">
-                  {users.length}
+                  {stats.total}
                 </span>{" "}
+
                 users
+
               </p>
 
-              <div className="flex items-center gap-1">
-
-                <button
-                  disabled
-                  className="rounded-lg border border-[#e1e5e1] px-3 py-2 text-[9px] text-[#b0b6b2]"
-                >
-                  Previous
-                </button>
-
-                <button className="rounded-lg bg-[#173d32] px-3 py-2 text-[9px] font-semibold text-white">
-                  1
-                </button>
-
-                <button className="rounded-lg border border-[#e1e5e1] px-3 py-2 text-[9px] text-[#65736b]">
-                  Next
-                </button>
-
-              </div>
+              <p className="text-[9px] text-[#a0aaa5]">
+                Live database data
+              </p>
 
             </div>
 
@@ -909,7 +1155,9 @@ export default function Users() {
 
       </main>
 
-      {/* USER DETAIL MODAL */}
+      {/* =====================================================
+          USER DETAIL MODAL
+      ===================================================== */}
 
       {selectedUser && (
 
@@ -961,11 +1209,23 @@ export default function Users() {
 
                   <div className="mt-2 flex gap-2">
 
-                    <span className="rounded-full bg-[#e8f0e9] px-2.5 py-1 text-[8px] font-semibold text-[#315e4f]">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[8px] font-semibold ${
+                        selectedUser.role === "Admin"
+                          ? "bg-[#173d32] text-white"
+                          : "bg-[#e8f0e9] text-[#315e4f]"
+                      }`}
+                    >
                       {selectedUser.role}
                     </span>
 
-                    <span className="rounded-full bg-[#edf3ed] px-2.5 py-1 text-[8px] font-semibold text-[#527063]">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[8px] font-semibold ${
+                        selectedUser.status === "Active"
+                          ? "bg-[#edf3ed] text-[#3d8065]"
+                          : "bg-[#f0f0ed] text-[#777d79]"
+                      }`}
+                    >
                       {selectedUser.status}
                     </span>
 
@@ -979,17 +1239,17 @@ export default function Users() {
 
                 <InfoBox
                   label="Projects"
-                  value={selectedUser.projects}
+                  value={selectedUser.projects ?? 0}
                 />
 
                 <InfoBox
                   label="Joined"
-                  value={selectedUser.joined}
+                  value={formatDate(selectedUser.joined)}
                 />
 
                 <InfoBox
                   label="Last Login"
-                  value={selectedUser.lastLogin}
+                  value={formatDate(selectedUser.lastLogin)}
                 />
 
                 <InfoBox
@@ -1009,7 +1269,7 @@ export default function Users() {
                   value={selectedUser.role}
                   onChange={(event) =>
                     changeRole(
-                      selectedUser.id,
+                      selectedUser,
                       event.target.value
                     )
                   }
@@ -1025,7 +1285,7 @@ export default function Users() {
 
                 <button
                   onClick={() =>
-                    toggleStatus(selectedUser.id)
+                    toggleStatus(selectedUser)
                   }
                   className="flex-1 rounded-xl border border-[#d8dfd8] bg-white px-4 py-3 text-[10px] font-semibold text-[#315e4f] hover:bg-[#f0f4ef]"
                 >
@@ -1036,7 +1296,7 @@ export default function Users() {
 
                 <button
                   onClick={() =>
-                    deleteUser(selectedUser.id)
+                    deleteUser(selectedUser)
                   }
                   className="flex-1 rounded-xl bg-[#8c4444] px-4 py-3 text-[10px] font-semibold text-white hover:bg-[#743737]"
                 >
@@ -1053,7 +1313,9 @@ export default function Users() {
 
       )}
 
-      {/* ADD USER MODAL */}
+      {/* =====================================================
+          ADD USER MODAL
+      ===================================================== */}
 
       {showAddUser && (
 
@@ -1133,6 +1395,30 @@ export default function Users() {
               <div>
 
                 <label className="text-[9px] font-semibold uppercase tracking-[1px] text-[#7d8982]">
+                  Password
+                  <span className="ml-1 font-normal normal-case tracking-normal text-[#a1aaa5]">
+                    (optional)
+                  </span>
+                </label>
+
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(event) =>
+                    setNewUser({
+                      ...newUser,
+                      password: event.target.value,
+                    })
+                  }
+                  placeholder="Leave empty for temporary password"
+                  className="mt-2 w-full rounded-xl border border-[#dfe5df] bg-white px-4 py-3 text-[11px] outline-none focus:border-[#6f9487]"
+                />
+
+              </div>
+
+              <div>
+
+                <label className="text-[9px] font-semibold uppercase tracking-[1px] text-[#7d8982]">
                   Role
                 </label>
 
@@ -1173,6 +1459,28 @@ export default function Users() {
 }
 
 /* =========================================================
+   HELPERS
+========================================================= */
+
+function formatDate(value) {
+  if (!value) return "Never";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/* =========================================================
    SMALL COMPONENTS
 ========================================================= */
 
@@ -1208,9 +1516,11 @@ function UserStat({ title, value, subtitle, icon }) {
   );
 }
 
-function UserAvatar({ name, large = false }) {
-  const initials = name
-    .split(" ")
+function UserAvatar({ name = "", large = false }) {
+  const initials = String(name)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
     .map((word) => word[0])
     .slice(0, 2)
     .join("")
@@ -1224,7 +1534,7 @@ function UserAvatar({ name, large = false }) {
           : "h-10 w-10 text-[9px]"
       }`}
     >
-      {initials}
+      {initials || "U"}
     </div>
   );
 }
@@ -1243,4 +1553,4 @@ function InfoBox({ label, value }) {
 
     </div>
   );
-    }
+}

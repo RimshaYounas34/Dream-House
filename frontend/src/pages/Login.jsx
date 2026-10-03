@@ -1,10 +1,12 @@
-
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { loginUser } from "../services/authApi";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase";
 import loginFloorplan from "../assets/login-floorplan.jpg";
+
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:7210/api";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -38,32 +40,70 @@ export default function Login() {
       });
 
       if (response?.token) {
-        localStorage.setItem("dreamhouse_token", response.token);
+        localStorage.setItem(
+          "dreamhouse_token",
+          response.token
+        );
       }
 
       const user = response?.user;
 
       if (user) {
-        localStorage.setItem("dreamhouse_name", user.name || "");
+        localStorage.setItem(
+          "dreamhouse_name",
+          user.name || ""
+        );
+
         localStorage.setItem(
           "dreamhouse_email",
           user.email || email
         );
+
         localStorage.setItem(
           "dreamhouse_role",
           user.role || "User"
         );
+
+        localStorage.setItem(
+          "dreamhouse_auth_provider",
+          user.authProvider || "email"
+        );
+
+        if (user.photoURL) {
+          localStorage.setItem(
+            "dreamhouse_photo",
+            user.photoURL
+          );
+        }
       } else {
-        localStorage.setItem("dreamhouse_email", email);
-        localStorage.setItem("dreamhouse_role", "User");
+        localStorage.setItem(
+          "dreamhouse_email",
+          email
+        );
+
+        localStorage.setItem(
+          "dreamhouse_role",
+          "User"
+        );
       }
 
-      localStorage.setItem("dreamhouse_logged_in", "true");
+      localStorage.setItem(
+        "dreamhouse_logged_in",
+        "true"
+      );
+
+      // Never store password
+      localStorage.removeItem("dreamhouse_password");
 
       if (remember) {
-        localStorage.setItem("dreamhouse_remember", "true");
+        localStorage.setItem(
+          "dreamhouse_remember",
+          "true"
+        );
       } else {
-        localStorage.removeItem("dreamhouse_remember");
+        localStorage.removeItem(
+          "dreamhouse_remember"
+        );
       }
 
       const role =
@@ -103,92 +143,192 @@ export default function Login() {
         prompt: "select_account",
       });
 
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      const users = JSON.parse(
-        localStorage.getItem("dreamhouse_users") || "[]"
+      // -----------------------------------------
+      // 1. Sign in with Google through Firebase
+      // -----------------------------------------
+      const result = await signInWithPopup(
+        auth,
+        provider
       );
 
-      const existingUserIndex = users.findIndex(
-        (item) =>
-          item.email?.toLowerCase() ===
-          user.email?.toLowerCase()
-      );
+      const firebaseUser = result.user;
 
-      const googleUser = {
-        id: user.uid,
-        name: user.displayName || "Google User",
-        email: user.email || "",
-        role: "User",
-        status: "Active",
-        authProvider: "Google",
-        photo: user.photoURL || "",
-        lastLogin: new Date().toISOString(),
-        joined: new Date().toISOString(),
-        projects: 0,
-      };
-
-      if (existingUserIndex >= 0) {
-        users[existingUserIndex] = {
-          ...users[existingUserIndex],
-          ...googleUser,
-        };
-      } else {
-        users.push(googleUser);
+      if (!firebaseUser) {
+        throw new Error(
+          "Google account information could not be retrieved."
+        );
       }
 
-      localStorage.setItem(
-        "dreamhouse_users",
-        JSON.stringify(users)
+      console.log(
+        "Google Firebase user:",
+        firebaseUser.email
       );
 
+      // -----------------------------------------
+      // 2. Get Firebase ID token
+      // -----------------------------------------
+      const firebaseIdToken =
+        await firebaseUser.getIdToken();
+
+      if (!firebaseIdToken) {
+        throw new Error(
+          "Google authentication token could not be generated."
+        );
+      }
+
+      console.log(
+        "Firebase ID token received successfully."
+      );
+
+      // -----------------------------------------
+      // 3. Send Firebase token to BACKEND
+      // -----------------------------------------
+      const response = await fetch(
+        `${API_URL}/auth/google`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            idToken: firebaseIdToken,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      console.log(
+        "Backend Google authentication response:",
+        data
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            "Google authentication failed on the server."
+        );
+      }
+
+      // -----------------------------------------
+      // 4. Backend returns ITS OWN JWT
+      // -----------------------------------------
+      const backendUser = data?.data?.user;
+      const backendToken = data?.data?.token;
+
+      if (!backendUser || !backendToken) {
+        throw new Error(
+          "Google was verified, but the application session could not be created."
+        );
+      }
+
+      console.log(
+        "Backend user created/found:",
+        backendUser
+      );
+
+      // -----------------------------------------
+      // 5. Save BACKEND JWT
+      // -----------------------------------------
+      localStorage.setItem(
+        "dreamhouse_token",
+        backendToken
+      );
+
+      // -----------------------------------------
+      // 6. Save user information
+      // -----------------------------------------
       localStorage.setItem(
         "dreamhouse_name",
-        user.displayName || "Google User"
+        backendUser.name || "Google User"
       );
 
       localStorage.setItem(
         "dreamhouse_email",
-        user.email || ""
+        backendUser.email ||
+          firebaseUser.email ||
+          ""
       );
 
-      localStorage.setItem("dreamhouse_role", "User");
-      localStorage.setItem("dreamhouse_logged_in", "true");
+      localStorage.setItem(
+        "dreamhouse_role",
+        backendUser.role || "user"
+      );
+
+      localStorage.setItem(
+        "dreamhouse_logged_in",
+        "true"
+      );
+
       localStorage.setItem(
         "dreamhouse_auth_provider",
-        "Google"
+        backendUser.authProvider || "google"
       );
 
-      if (user.photoURL) {
+      // Never store password
+      localStorage.removeItem("dreamhouse_password");
+
+      if (
+        backendUser.photoURL ||
+        firebaseUser.photoURL
+      ) {
         localStorage.setItem(
           "dreamhouse_photo",
-          user.photoURL
+          backendUser.photoURL ||
+            firebaseUser.photoURL ||
+            ""
         );
       }
 
-      const token = await user.getIdToken();
-
-      localStorage.setItem(
-        "dreamhouse_token",
-        token
+      // -----------------------------------------
+      // 7. Remove old localStorage users system
+      // -----------------------------------------
+      localStorage.removeItem(
+        "dreamhouse_users"
       );
 
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("Google login error:", err);
+      // -----------------------------------------
+      // 8. Navigate according to backend role
+      // -----------------------------------------
+      const role =
+        backendUser.role || "user";
 
-      if (err?.code === "auth/popup-closed-by-user") {
-        setError("Google login popup was closed.");
-      } else if (err?.code === "auth/popup-blocked") {
+      if (role.toLowerCase() === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      console.error(
+        "Google login error:",
+        err
+      );
+
+      if (
+        err?.code ===
+        "auth/popup-closed-by-user"
+      ) {
+        setError(
+          "Google login popup was closed."
+        );
+      } else if (
+        err?.code ===
+        "auth/popup-blocked"
+      ) {
         setError(
           "Google popup was blocked. Please allow popups for this site."
         );
-      } else if (err?.code === "auth/unauthorized-domain") {
+      } else if (
+        err?.code ===
+        "auth/unauthorized-domain"
+      ) {
         setError(
           "This domain is not authorized in Firebase."
         );
-      } else if (err?.code === "auth/operation-not-allowed") {
+      } else if (
+        err?.code ===
+        "auth/operation-not-allowed"
+      ) {
         setError(
           "Google Sign-In is not enabled in Firebase."
         );
@@ -213,19 +353,15 @@ export default function Login() {
         ====================================================== */}
         <section className="relative hidden min-h-screen overflow-hidden bg-[#173d32] lg:flex">
 
-          {/* Your Image */}
           <img
             src={loginFloorplan}
             alt="Dream House Floor Plan"
             className="absolute inset-0 h-full w-full object-cover"
           />
 
-          {/* Elegant Overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#173d32]/80 via-[#173d32]/35 to-black/35" />
 
-          {/* Soft Glow */}
           <div className="absolute -left-20 top-1/3 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-
 
           {/* Logo */}
           <div className="absolute left-10 top-9 z-20 flex items-center gap-3 text-white">
@@ -261,13 +397,11 @@ export default function Login() {
 
           </div>
 
-
           {/* Main Content */}
           <div className="relative z-10 flex min-h-screen w-full items-center px-12 xl:px-16">
 
             <div className="max-w-[520px] text-white">
 
-              {/* Badge */}
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-lg">
 
                 <span className="h-1.5 w-1.5 rounded-full bg-[#dce9dc]" />
@@ -278,8 +412,6 @@ export default function Login() {
 
               </div>
 
-
-              {/* Heading */}
               <h1 className="font-serif text-[44px] leading-[1.06] sm:text-[50px] xl:text-[60px]">
 
                 Build the plan
@@ -291,16 +423,14 @@ export default function Login() {
 
               </h1>
 
-
-              {/* Description */}
               <p className="mt-6 max-w-[440px] text-[13px] leading-7 text-white/75">
+
                 Create your floor plan, organize every room,
                 explore your home in 3D, and turn your ideas
                 into a beautiful living space.
+
               </p>
 
-
-              {/* Feature Cards */}
               <div className="mt-8 grid max-w-[450px] grid-cols-3 gap-2.5">
 
                 <div className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3.5 backdrop-blur-md">
@@ -319,7 +449,6 @@ export default function Login() {
 
                 </div>
 
-
                 <div className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3.5 backdrop-blur-md">
 
                   <div className="mb-2 text-lg">
@@ -335,7 +464,6 @@ export default function Login() {
                   </p>
 
                 </div>
-
 
                 <div className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3.5 backdrop-blur-md">
 
@@ -359,8 +487,6 @@ export default function Login() {
 
           </div>
 
-
-          {/* Bottom */}
           <div className="absolute bottom-8 left-10 z-20">
 
             <p className="text-[9px] uppercase tracking-[0.3em] text-white/45">
@@ -370,7 +496,6 @@ export default function Login() {
           </div>
 
         </section>
-
 
         {/* =====================================================
             RIGHT LOGIN
@@ -418,7 +543,6 @@ export default function Login() {
 
             </Link>
 
-
             {/* Card */}
             <div className="rounded-[28px] border border-[#e0e4dc] bg-white p-6 shadow-[0_25px_70px_rgba(23,61,50,0.09)] sm:p-8">
 
@@ -445,14 +569,12 @@ export default function Login() {
 
               </div>
 
-
               {/* Error */}
               {error && (
                 <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs leading-5 text-red-700">
                   {error}
                 </div>
               )}
-
 
               {/* Google */}
               <button
@@ -490,9 +612,11 @@ export default function Login() {
                 ) : (
                   <>
                     <span className="flex h-5 w-5 items-center justify-center text-[17px] font-bold">
+
                       <span className="bg-gradient-to-r from-[#4285F4] via-[#34A853] to-[#EA4335] bg-clip-text text-transparent">
                         G
                       </span>
+
                     </span>
 
                     Continue with Google
@@ -500,7 +624,6 @@ export default function Login() {
                 )}
 
               </button>
-
 
               {/* Divider */}
               <div className="my-6 flex items-center gap-4">
@@ -514,7 +637,6 @@ export default function Login() {
                 <div className="h-px flex-1 bg-[#e1e4df]" />
 
               </div>
-
 
               {/* Form */}
               <form
@@ -546,7 +668,6 @@ export default function Login() {
 
                 </div>
 
-
                 {/* Password */}
                 <div>
 
@@ -559,17 +680,13 @@ export default function Login() {
                       Password
                     </label>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        alert(
-                          "Password reset will be connected later."
-                        )
-                      }
+                    {/* FORGOT PASSWORD */}
+                    <Link
+                      to="/forgot-password"
                       className="text-[10px] font-semibold text-[#0b5d46] hover:underline"
                     >
                       Forgot password?
-                    </button>
+                    </Link>
 
                   </div>
 
@@ -587,7 +704,6 @@ export default function Login() {
 
                 </div>
 
-
                 {/* Remember */}
                 <label className="flex cursor-pointer items-center gap-2 text-[11px] text-[#697771]">
 
@@ -603,7 +719,6 @@ export default function Login() {
                   Remember me
 
                 </label>
-
 
                 {/* Login */}
                 <button
@@ -651,7 +766,6 @@ export default function Login() {
 
               </form>
 
-
               {/* Signup */}
               <div className="mt-6 rounded-2xl border border-[#e0e4dd] bg-[#f8f9f5] px-4 py-3.5 text-center">
 
@@ -671,7 +785,6 @@ export default function Login() {
               </div>
 
             </div>
-
 
             {/* Footer */}
             <p className="mt-5 text-center text-[9px] leading-5 text-[#929b96]">

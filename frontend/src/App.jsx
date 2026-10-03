@@ -1,10 +1,19 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import ScrollToTop from "./components/common/ScrollToTop";
+import ProtectedRoute from "./components/common/ProtectedRoute";
+import AdminRoute from "./components/common/AdminRoute";
 
+// Public
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import AdminLogin from "./pages/AdminLogin";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import Contact from "./pages/Contact";
+
+// User
 import Dashboard from "./pages/Dashboard";
 import CreateProject from "./pages/CreateProject";
 import AIPlanner from "./pages/AIPlanner";
@@ -15,51 +24,180 @@ import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import ThreeDView from "./pages/ThreeDView";
 import DesignMethod from "./pages/DesignMethod";
+import FeaturesPage from "./pages/Features";
+import HowItWorks from "./pages/HowItWorks";
 
+// Admin
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminProjects from "./pages/AdminProjects";
 import Users from "./pages/Users";
 import AIUsage from "./pages/AIUsage";
 import Reports from "./pages/Reports";
 import AdminSettings from "./pages/AdminSettings";
-import FeaturesPage from "./pages/Features";
-import HowItWorks from "./pages/HowItWorks";
-import AdminLogin from "./pages/AdminLogin";
+import ContactQueries from "./pages/ContactQueries";
 
 function App() {
   return (
     <BrowserRouter>
-      {/* Automatically scroll every new page to the top */}
       <ScrollToTop />
 
       <Routes>
-        {/* PUBLIC */}
+
+        {/* =========================
+            PUBLIC
+        ========================== */}
+
+        {/* Home is accessible without login */}
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
 
-        {/* USER */}
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/create-project" element={<CreateProject />} />
-        <Route path="/ai-planner" element={<AIPlanner />} />
-        <Route path="/floor-plan-editor" element={<FloorPlanEditor />} />
-        <Route path="/my-designs" element={<MyDesigns />} />
-        <Route path="/templates" element={<Templates />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/help" element={<Help />} />
-        <Route path="/3d-view" element={<ThreeDView />} />
-        <Route path="/design-method" element={<DesignMethod />} />
-        <Route path="/features" element={<FeaturesPage />} />
-        <Route path="/how-it-works" element={<HowItWorks />} />
+        {/* Login */}
+        <Route
+          path="/login"
+          element={<Login />}
+        />
 
-        {/* ADMIN */}
-        <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/users" element={<Users />} />
-        <Route path="/admin/projects" element={<AdminProjects />} />
-        <Route path="/admin/ai-usage" element={<AIUsage />} />
-        <Route path="/admin/reports" element={<Reports />} />
-        <Route path="/admin/settings" element={<AdminSettings />} />
+        {/* Signup */}
+        <Route
+          path="/signup"
+          element={<Signup />}
+        />
+
+        {/* Admin Login */}
+        <Route
+          path="/admin-login"
+          element={<AdminLogin />}
+        />
+
+        {/* Password Reset */}
+        <Route
+          path="/forgot-password"
+          element={<ForgotPassword />}
+        />
+
+        <Route
+          path="/reset-password"
+          element={<ResetPassword />}
+        />
+
+
+        {/* =========================
+            USER - LOGIN REQUIRED
+        ========================== */}
+
+        <Route element={<ProtectedRoute />}>
+
+          <Route
+            path="/dashboard"
+            element={<Dashboard />}
+          />
+
+          <Route
+            path="/create-project"
+            element={<CreateProject />}
+          />
+
+          <Route
+            path="/ai-planner"
+            element={<AIPlanner />}
+          />
+
+          <Route
+            path="/floor-plan-editor"
+            element={<FloorPlanEditor />}
+          />
+
+          <Route
+            path="/my-designs"
+            element={<MyDesigns />}
+          />
+
+          <Route
+            path="/templates"
+            element={<Templates />}
+          />
+
+          <Route
+            path="/settings"
+            element={<Settings />}
+          />
+
+          <Route
+            path="/help"
+            element={<Help />}
+          />
+
+          <Route
+            path="/3d-view"
+            element={<ThreeDView />}
+          />
+
+          <Route
+            path="/design-method"
+            element={<DesignMethod />}
+          />
+
+          <Route
+            path="/features"
+            element={<FeaturesPage />}
+          />
+
+          <Route
+            path="/how-it-works"
+            element={<HowItWorks />}
+          />
+
+          {/* Contact is also protected */}
+          <Route
+            path="/contact"
+            element={<Contact />}
+          />
+
+        </Route>
+
+
+        {/* =========================
+            ADMIN - ADMIN REQUIRED
+        ========================== */}
+
+        <Route element={<AdminRoute />}>
+
+          <Route
+            path="/admin"
+            element={<AdminDashboard />}
+          />
+
+          <Route
+            path="/admin/users"
+            element={<Users />}
+          />
+
+          <Route
+            path="/admin/projects"
+            element={<AdminProjects />}
+          />
+
+          <Route
+            path="/admin/queries"
+            element={<ContactQueries />}
+          />
+
+          <Route
+            path="/admin/ai-usage"
+            element={<AIUsage />}
+          />
+
+          <Route
+            path="/admin/reports"
+            element={<Reports />}
+          />
+
+          <Route
+            path="/admin/settings"
+            element={<AdminSettings />}
+          />
+
+        </Route>
+
       </Routes>
     </BrowserRouter>
   );

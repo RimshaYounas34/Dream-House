@@ -7,7 +7,10 @@ const json = (method, body) => ({
 
 const qs = (params = {}) => {
   const clean = Object.entries(params).filter(
-    ([, v]) => v !== undefined && v !== "" && v !== "All"
+    ([, v]) =>
+      v !== undefined &&
+      v !== "" &&
+      v !== "All"
   );
 
   return clean.length
@@ -15,12 +18,14 @@ const qs = (params = {}) => {
     : "";
 };
 
+
 // ===============================
 // ADMIN DASHBOARD
 // ===============================
 
 export const getAdminDashboard = () =>
   apiRequest("/admin/dashboard");
+
 
 // ===============================
 // USERS
@@ -33,10 +38,16 @@ export const getAdminUser = (id) =>
   apiRequest(`/admin/users/${id}`);
 
 export const createAdminUser = (user) =>
-  apiRequest("/admin/users", json("POST", user));
+  apiRequest(
+    "/admin/users",
+    json("POST", user)
+  );
 
 export const updateAdminUser = (id, changes) =>
-  apiRequest(`/admin/users/${id}`, json("PUT", changes));
+  apiRequest(
+    `/admin/users/${id}`,
+    json("PUT", changes)
+  );
 
 export const toggleAdminUserStatus = (id) =>
   apiRequest(
@@ -53,73 +64,119 @@ export const changeAdminUserRole = (id, role) =>
     json("PATCH", { role })
   );
 
-export const resetAdminUserPassword = (id, password) =>
+export const resetAdminUserPassword = (
+  id,
+  password
+) =>
   apiRequest(
     `/admin/users/${id}/reset-password`,
-    json("POST", password ? { password } : {})
+    json(
+      "POST",
+      password
+        ? { password }
+        : {}
+    )
   );
 
 export const deleteAdminUser = (id) =>
-  apiRequest(`/admin/users/${id}`, {
-    method: "DELETE",
-  });
+  apiRequest(
+    `/admin/users/${id}`,
+    {
+      method: "DELETE",
+    }
+  );
+
 
 // ===============================
 // PROJECTS
 // ===============================
 
 export const getAdminProjects = (params) =>
-  apiRequest(`/admin/projects${qs(params)}`);
+  apiRequest(
+    `/admin/projects${qs(params)}`
+  );
 
 export const getAdminProject = (id) =>
-  apiRequest(`/admin/projects/${id}`);
+  apiRequest(
+    `/admin/projects/${id}`
+  );
 
 export const deleteAdminProject = (id) =>
-  apiRequest(`/admin/projects/${id}`, {
-    method: "DELETE",
-  });
+  apiRequest(
+    `/admin/projects/${id}`,
+    {
+      method: "DELETE",
+    }
+  );
+
 
 // ===============================
 // TEMPLATES
 // ===============================
 
 export const getAdminTemplates = () =>
-  apiRequest("/admin/templates");
+  apiRequest(
+    "/admin/templates"
+  );
 
-export const createAdminTemplate = (template) =>
+export const createAdminTemplate = (
+  template
+) =>
   apiRequest(
     "/admin/templates",
     json("POST", template)
   );
 
-export const updateAdminTemplate = (id, changes) =>
+export const updateAdminTemplate = (
+  id,
+  changes
+) =>
   apiRequest(
     `/admin/templates/${id}`,
     json("PUT", changes)
   );
 
-export const deleteAdminTemplate = (id) =>
-  apiRequest(`/admin/templates/${id}`, {
-    method: "DELETE",
-  });
+export const deleteAdminTemplate = (
+  id
+) =>
+  apiRequest(
+    `/admin/templates/${id}`,
+    {
+      method: "DELETE",
+    }
+  );
 
 export const getPublicTemplates = () =>
-  apiRequest("/templates");
+  apiRequest(
+    "/templates"
+  );
+
 
 // ===============================
 // AI USAGE
 // ===============================
 
-export const getAdminAiUsage = (days = 7) =>
-  apiRequest(`/admin/ai-usage?days=${days}`);
+export const getAdminAiUsage = (
+  days = 7
+) =>
+  apiRequest(
+    `/admin/ai-usage?days=${days}`
+  );
 
-export const getAdminAiLogs = (params) =>
-  apiRequest(`/admin/ai-usage/logs${qs(params)}`);
+export const getAdminAiLogs = (
+  params
+) =>
+  apiRequest(
+    `/admin/ai-usage/logs${qs(params)}`
+  );
 
 export const clearAdminAiLogs = () =>
-  apiRequest("/admin/ai-usage", {
-    method: "DELETE",
-  });
+  apiRequest(
+    "/admin/ai-usage",
+    {
+      method: "DELETE",
+    }
+  );
 
 export const track3dGeneration = () =>
   apiRequest(
@@ -129,19 +186,63 @@ export const track3dGeneration = () =>
     })
   ).catch(() => {});
 
+
+// ===============================
+// CONTACT QUERIES
+// ===============================
+
+export const getAdminContactMessages = () =>
+  apiRequest(
+    "/admin/contact-messages"
+  );
+
+export const getAdminContactMessage = (
+  id
+) =>
+  apiRequest(
+    `/admin/contact-messages/${id}`
+  );
+
+export const updateAdminContactMessageStatus = (
+  id,
+  status
+) =>
+  apiRequest(
+    `/admin/contact-messages/${id}/status`,
+    json("PATCH", { status })
+  );
+
+export const deleteAdminContactMessage = (
+  id
+) =>
+  apiRequest(
+    `/admin/contact-messages/${id}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+
 // ===============================
 // REPORTS
 // ===============================
 
-export const getAdminReports = (period = 30) =>
-  apiRequest(`/admin/reports?period=${period}`);
+export const getAdminReports = (
+  period = 30
+) =>
+  apiRequest(
+    `/admin/reports?period=${period}`
+  );
 
-export async function downloadAdminReport(type) {
+export async function downloadAdminReport(
+  type
+) {
   const blob = await apiRequest(
     `/admin/reports/export?type=${type}`
   );
 
-  const url = URL.createObjectURL(blob);
+  const url =
+    URL.createObjectURL(blob);
 
   const a = Object.assign(
     document.createElement("a"),
@@ -158,20 +259,27 @@ export async function downloadAdminReport(type) {
   URL.revokeObjectURL(url);
 }
 
+
 // ===============================
 // SETTINGS
 // ===============================
 
 export const getAdminSettings = () =>
-  apiRequest("/admin/settings");
+  apiRequest(
+    "/admin/settings"
+  );
 
-export const updateAdminSettings = (settings) =>
+export const updateAdminSettings = (
+  settings
+) =>
   apiRequest(
     "/admin/settings",
     json("PUT", settings)
   );
 
-export const updateAdminProfile = (profile) =>
+export const updateAdminProfile = (
+  profile
+) =>
   apiRequest(
     "/admin/profile",
     json("PUT", profile)
@@ -190,7 +298,10 @@ export const changeAdminPassword = (
   );
 
 export const getPublicSettings = () =>
-  apiRequest("/settings/public");
+  apiRequest(
+    "/settings/public"
+  );
+
 
 // ===============================
 // API URL

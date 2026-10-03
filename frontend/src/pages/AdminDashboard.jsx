@@ -1,7 +1,10 @@
-
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAdminDashboard } from "../services/adminApi";
+import {
+  getAdminDashboard,
+  getAdminProjects,
+  getAdminContactMessages,
+} from "../services/adminApi";
 
 /* =========================================================
    ICONS
@@ -60,7 +63,7 @@ const Icon = ({ name, size = 18 }) => {
     settings: (
       <>
         <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2 2-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V20h-3v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-2-2 .1-.1A1.7 1.7 0 0 0 7.2 15a1.7 1.7 0 0 0-1.6-1H5v-3h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 2-2 .1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V5h3v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 2 2-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v3h-.2a1.7 1.7 0 0 0-1.6 1Z" />
+        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2 2-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V20h-3v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-2-2 .1-.1A1.7 1.7 0 0 0 7.2 15a1.7 1.7 0 0 0-1.6-1H5v-3h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 2-2 .1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V5h3v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 2 2-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.9 0 0 0 1.6 1h.2v3h-.2a1.7 1.7 0 0 0-1.6 1Z" />
       </>
     ),
 
@@ -107,6 +110,7 @@ function AdminSidebar({ navigate, active, logout }) {
     { label: "Users", icon: "users", path: "/admin/users" },
     { label: "Projects", icon: "plan", path: "/admin/projects" },
     { label: "AI Usage", icon: "ai", path: "/admin/ai-usage" },
+    { label: "Queries", icon: "report", path: "/admin/queries" },
     { label: "Reports", icon: "report", path: "/admin/reports" },
     { label: "Settings", icon: "settings", path: "/admin/settings" },
   ];
@@ -195,6 +199,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [queries, setQueries] = useState([]);
+  const [newQueries, setNewQueries] = useState(0);
+
   /* -------------------------------------------------------
      LOGOUT
   ------------------------------------------------------- */
@@ -228,13 +235,149 @@ export default function AdminDashboard() {
     setError("");
 
     try {
-      const response = await getAdminDashboard();
+      /* -----------------------------------------------------
+         ADMIN DASHBOARD
+      ----------------------------------------------------- */
 
-      const data = response?.data || response || null;
+      const dashboardResponse =
+        await getAdminDashboard();
 
-      setDashboard(data);
+      const data =
+        dashboardResponse?.data ||
+        dashboardResponse ||
+        null;
+
+      /* -----------------------------------------------------
+         ALL PROJECTS
+      ----------------------------------------------------- */
+
+      const projectsResponse =
+        await getAdminProjects({
+          page: 1,
+          limit: 1000,
+        });
+
+      const projectsData =
+        projectsResponse?.data ||
+        projectsResponse ||
+        {};
+
+      const allProjects = Array.isArray(projectsData)
+        ? projectsData
+        : Array.isArray(projectsData.projects)
+        ? projectsData.projects
+        : Array.isArray(projectsData.items)
+        ? projectsData.items
+        : Array.isArray(projectsData.results)
+        ? projectsData.results
+        : [];
+
+      /* -----------------------------------------------------
+         CONTACT QUERIES
+      ----------------------------------------------------- */
+
+      const queriesResponse =
+        await getAdminContactMessages();
+
+      const queriesData =
+        queriesResponse?.data ||
+        queriesResponse ||
+        {};
+
+      const contactQueries = Array.isArray(
+        queriesData?.messages
+      )
+        ? queriesData.messages
+        : Array.isArray(queriesData)
+        ? queriesData
+        : [];
+
+      setQueries(contactQueries);
+
+      setNewQueries(
+        Number(queriesData?.newCount || 0)
+      );
+
+      /* -----------------------------------------------------
+         FIND ACTUAL 3D PROJECTS
+      ----------------------------------------------------- */
+
+      const threeDProjectsList =
+        allProjects.filter((project) => {
+          const floorPlanData =
+            project?.floorPlanData || {};
+
+          const settings =
+            floorPlanData?.settings || {};
+
+          return (
+            project?.has3D === true ||
+            project?.type === "3D" ||
+            project?.type === "3d" ||
+            project?.created3D === true ||
+            floorPlanData?.created3D === true ||
+            settings?.created3D === true ||
+            Boolean(settings?.last3DSavedAt)
+          );
+        });
+
+      const actualTotalProjects =
+        allProjects.length;
+
+      const actualThreeDProjects =
+        threeDProjectsList.length;
+
+      /* -----------------------------------------------------
+         EXISTING DASHBOARD STATS
+      ----------------------------------------------------- */
+
+      const dashboardStats =
+        data?.stats ||
+        data?.statistics ||
+        {};
+
+      /* -----------------------------------------------------
+         UPDATED DASHBOARD DATA
+      ----------------------------------------------------- */
+
+      const updatedDashboard = {
+        ...(data || {}),
+
+        stats: {
+          ...dashboardStats,
+
+          totalProjects:
+            actualTotalProjects ||
+            dashboardStats.totalProjects ||
+            data?.totalProjects ||
+            0,
+
+          threeDProjects:
+            actualThreeDProjects,
+
+          total3DProjects:
+            actualThreeDProjects,
+        },
+
+        projects:
+          Array.isArray(data?.projects) &&
+          data.projects.length > 0
+            ? data.projects
+            : allProjects,
+
+        recentProjects:
+          Array.isArray(data?.recentProjects) &&
+          data.recentProjects.length > 0
+            ? data.recentProjects
+            : allProjects.slice(0, 5),
+      };
+
+      setDashboard(updatedDashboard);
     } catch (err) {
-      console.error("Admin dashboard error:", err);
+      console.error(
+        "Admin dashboard error:",
+        err
+      );
 
       setError(
         err?.message ||
@@ -250,7 +393,11 @@ export default function AdminDashboard() {
         },
         recentUsers: [],
         recentProjects: [],
+        projects: [],
       });
+
+      setQueries([]);
+      setNewQueries(0);
     } finally {
       setLoading(false);
     }
@@ -264,18 +411,33 @@ export default function AdminDashboard() {
      SAFE DATA
   ------------------------------------------------------- */
 
-  const stats = dashboard?.stats || dashboard?.statistics || {};
+  const stats =
+    dashboard?.stats ||
+    dashboard?.statistics ||
+    {};
 
-  const getStatValue = (stat, fallback = 0) => {
-    if (stat && typeof stat === "object") {
+  const getStatValue = (
+    stat,
+    fallback = 0
+  ) => {
+    if (
+      stat &&
+      typeof stat === "object"
+    ) {
       return stat.value ?? fallback;
     }
 
     return stat ?? fallback;
   };
 
-  const getStatChange = (stat, fallback = "") => {
-    if (stat && typeof stat === "object") {
+  const getStatChange = (
+    stat,
+    fallback = ""
+  ) => {
+    if (
+      stat &&
+      typeof stat === "object"
+    ) {
       return stat.change ?? fallback;
     }
 
@@ -308,44 +470,60 @@ export default function AdminDashboard() {
     dashboard?.aiUsage ??
     0;
 
-  const totalUsers = getStatValue(totalUsersRaw);
-  const totalProjects = getStatValue(totalProjectsRaw);
-  const threeDProjects = getStatValue(threeDProjectsRaw);
-  const aiRequests = getStatValue(aiRequestsRaw);
+  const totalUsers =
+    getStatValue(totalUsersRaw);
 
-  const totalUsersChange = getStatChange(
-    totalUsersRaw,
-    "+12%"
-  );
+  const totalProjects =
+    getStatValue(totalProjectsRaw);
 
-  const totalProjectsChange = getStatChange(
-    totalProjectsRaw,
-    "+8%"
-  );
+  const threeDProjects =
+    getStatValue(threeDProjectsRaw);
 
-  const threeDProjectsChange = getStatChange(
-    threeDProjectsRaw,
-    "+15%"
-  );
+  const aiRequests =
+    getStatValue(aiRequestsRaw);
 
-  const aiRequestsChange = getStatChange(
-    aiRequestsRaw,
-    "+20%"
-  );
+  const totalUsersChange =
+    getStatChange(
+      totalUsersRaw,
+      "+12%"
+    );
 
-  const recentUsers = Array.isArray(dashboard?.recentUsers)
+  const totalProjectsChange =
+    getStatChange(
+      totalProjectsRaw,
+      "+8%"
+    );
+
+  const threeDProjectsChange =
+    getStatChange(
+      threeDProjectsRaw,
+      "+15%"
+    );
+
+  const aiRequestsChange =
+    getStatChange(
+      aiRequestsRaw,
+      "+20%"
+    );
+
+  const recentUsers = Array.isArray(
+    dashboard?.recentUsers
+  )
     ? dashboard.recentUsers
     : Array.isArray(dashboard?.users)
     ? dashboard.users
     : [];
 
-  const recentProjects = Array.isArray(
-    dashboard?.recentProjects
-  )
-    ? dashboard.recentProjects
-    : Array.isArray(dashboard?.projects)
-    ? dashboard.projects
-    : [];
+  const recentProjects =
+    Array.isArray(
+      dashboard?.recentProjects
+    )
+      ? dashboard.recentProjects
+      : Array.isArray(
+          dashboard?.projects
+        )
+      ? dashboard.projects
+      : [];
 
   return (
     <div className="min-h-screen bg-[#f4f3eb] text-[#173d32]">
@@ -389,7 +567,8 @@ export default function AdminDashboard() {
             </h2>
 
             <p className="mt-1 text-[11px] text-[#718078]">
-              Here's what's happening with DreamHouse Planner today.
+              Here's what's happening with
+              DreamHouse Planner today.
             </p>
           </div>
 
@@ -411,33 +590,76 @@ export default function AdminDashboard() {
 
           {/* STAT CARDS */}
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <AdminStat
               title="Total Users"
-              value={loading ? "—" : totalUsers}
-              change={loading ? "" : totalUsersChange}
+              value={
+                loading
+                  ? "—"
+                  : totalUsers
+              }
+              change={
+                loading
+                  ? ""
+                  : totalUsersChange
+              }
               icon="users"
             />
 
             <AdminStat
               title="Total Projects"
-              value={loading ? "—" : totalProjects}
-              change={loading ? "" : totalProjectsChange}
+              value={
+                loading
+                  ? "—"
+                  : totalProjects
+              }
+              change={
+                loading
+                  ? ""
+                  : totalProjectsChange
+              }
               icon="plan"
             />
 
             <AdminStat
               title="3D Projects"
-              value={loading ? "—" : threeDProjects}
-              change={loading ? "" : threeDProjectsChange}
+              value={
+                loading
+                  ? "—"
+                  : threeDProjects
+              }
+              change={
+                loading
+                  ? ""
+                  : threeDProjectsChange
+              }
               icon="cube"
             />
 
             <AdminStat
               title="AI Requests"
-              value={loading ? "—" : aiRequests}
-              change={loading ? "" : aiRequestsChange}
+              value={
+                loading
+                  ? "—"
+                  : aiRequests
+              }
+              change={
+                loading
+                  ? ""
+                  : aiRequestsChange
+              }
               icon="ai"
+            />
+
+            <AdminStat
+              title="New Queries"
+              value={
+                loading
+                  ? "—"
+                  : newQueries
+              }
+              change=""
+              icon="report"
             />
           </div>
 
@@ -460,7 +682,11 @@ export default function AdminDashboard() {
 
                 <button
                   type="button"
-                  onClick={() => navigate("/admin/users")}
+                  onClick={() =>
+                    navigate(
+                      "/admin/users"
+                    )
+                  }
                   className="text-[10px] font-semibold text-[#174d3d]"
                 >
                   View All →
@@ -469,19 +695,39 @@ export default function AdminDashboard() {
 
               <div className="space-y-3">
                 {recentUsers.length > 0 ? (
-                  recentUsers.slice(0, 5).map((user, index) => (
-                    <UserRow
-                      key={user?._id || user?.id || index}
-                      name={user?.name || "Unknown User"}
-                      email={user?.email || "—"}
-                      projects={
-                        user?.projectsCount !== undefined
-                          ? `${user.projectsCount} projects`
-                          : "User"
-                      }
-                      avatar={initials(user?.name)}
-                    />
-                  ))
+                  recentUsers
+                    .slice(0, 5)
+                    .map(
+                      (
+                        user,
+                        index
+                      ) => (
+                        <UserRow
+                          key={
+                            user?._id ||
+                            user?.id ||
+                            index
+                          }
+                          name={
+                            user?.name ||
+                            "Unknown User"
+                          }
+                          email={
+                            user?.email ||
+                            "—"
+                          }
+                          projects={
+                            user?.projectsCount !==
+                            undefined
+                              ? `${user.projectsCount} projects`
+                              : "User"
+                          }
+                          avatar={initials(
+                            user?.name
+                          )}
+                        />
+                      )
+                    )
                 ) : (
                   <EmptyState text="No recent users found." />
                 )}
@@ -504,7 +750,11 @@ export default function AdminDashboard() {
 
                 <button
                   type="button"
-                  onClick={() => navigate("/admin/projects")}
+                  onClick={() =>
+                    navigate(
+                      "/admin/projects"
+                    )
+                  }
                   className="text-[10px] font-semibold text-[#174d3d]"
                 >
                   View All →
@@ -513,32 +763,124 @@ export default function AdminDashboard() {
 
               <div className="space-y-3">
                 {recentProjects.length > 0 ? (
-                  recentProjects.slice(0, 5).map((project, index) => (
-                    <ProjectRow
-                      key={project?._id || project?.id || index}
-                      name={
-                        project?.name ||
-                        project?.title ||
-                        "Untitled Project"
-                      }
-                      user={
-                        project?.user?.name ||
-                        project?.owner?.name ||
-                        project?.userName ||
-                        "Unknown User"
-                      }
-                      type={
-                        project?.type ||
-                        (project?.has3D ? "3D" : "2D")
-                      }
-                    />
-                  ))
+                  recentProjects
+                    .slice(0, 5)
+                    .map(
+                      (
+                        project,
+                        index
+                      ) => (
+                        <ProjectRow
+                          key={
+                            project?._id ||
+                            project?.id ||
+                            index
+                          }
+                          name={
+                            project?.name ||
+                            project?.title ||
+                            "Untitled Project"
+                          }
+                          user={
+                            project?.user
+                              ?.name ||
+                            project?.owner
+                              ?.name ||
+                            project?.userName ||
+                            project?.user
+                              ?.email ||
+                            "Unknown User"
+                          }
+                          type={
+                            project?.type ||
+                            (project?.has3D
+                              ? "3D"
+                              : project
+                                  ?.floorPlanData
+                                  ?.settings
+                                  ?.created3D
+                              ? "3D"
+                              : "2D")
+                          }
+                        />
+                      )
+                    )
                 ) : (
                   <EmptyState text="No recent projects found." />
                 )}
               </div>
             </section>
           </div>
+
+          {/* RECENT QUERIES */}
+
+          <section className="mt-5 rounded-2xl border border-[#dce2db] bg-white p-5">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <h3 className="font-serif text-[18px] font-semibold">
+                  Recent Queries
+                </h3>
+
+                <p className="mt-1 text-[10px] text-[#819087]">
+                  Messages received from website visitors
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    "/admin/queries"
+                  )
+                }
+                className="text-[10px] font-semibold text-[#174d3d]"
+              >
+                View All →
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {queries.length > 0 ? (
+                queries
+                  .slice(0, 5)
+                  .map(
+                    (
+                      query,
+                      index
+                    ) => (
+                      <QueryRow
+                        key={
+                          query?._id ||
+                          query?.id ||
+                          index
+                        }
+                        name={
+                          query?.name ||
+                          "Unknown User"
+                        }
+                        email={
+                          query?.email ||
+                          "—"
+                        }
+                        subject={
+                          query?.subject ||
+                          "No subject"
+                        }
+                        status={
+                          query?.status ||
+                          "new"
+                        }
+                        date={
+                          query?.createdAt
+                        }
+                      />
+                    )
+                  )
+              ) : (
+                <EmptyState text="No contact queries found." />
+              )}
+            </div>
+          </section>
 
           {/* ANALYTICS */}
 
@@ -555,15 +897,33 @@ export default function AdminDashboard() {
               </p>
 
               <div className="mt-6 flex h-[170px] items-end gap-3 border-b border-[#e5e8e3] px-2">
-                {[38, 62, 48, 75, 66, 92, 78, 100, 84, 112, 96, 126].map(
-                  (height, index) => (
+                {[
+                  38,
+                  62,
+                  48,
+                  75,
+                  66,
+                  92,
+                  78,
+                  100,
+                  84,
+                  112,
+                  96,
+                  126,
+                ].map(
+                  (
+                    height,
+                    index
+                  ) => (
                     <div
                       key={index}
                       className="flex flex-1 items-end justify-center"
                     >
                       <div
                         className="w-full max-w-[26px] rounded-t-lg bg-[#1d5544]"
-                        style={{ height }}
+                        style={{
+                          height,
+                        }}
                       />
                     </div>
                   )
@@ -627,7 +987,12 @@ export default function AdminDashboard() {
    STAT CARD
 ========================================================= */
 
-function AdminStat({ title, value, change, icon }) {
+function AdminStat({
+  title,
+  value,
+  change,
+  icon,
+}) {
   const safeValue =
     value !== null &&
     value !== undefined &&
@@ -662,7 +1027,10 @@ function AdminStat({ title, value, change, icon }) {
         </div>
 
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#edf3ed] text-[#174d3d]">
-          <Icon name={icon} size={18} />
+          <Icon
+            name={icon}
+            size={18}
+          />
         </div>
       </div>
     </div>
@@ -673,7 +1041,12 @@ function AdminStat({ title, value, change, icon }) {
    USER ROW
 ========================================================= */
 
-function UserRow({ name, email, projects, avatar }) {
+function UserRow({
+  name,
+  email,
+  projects,
+  avatar,
+}) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-[#edf0eb] p-3">
       <div className="flex items-center gap-3">
@@ -703,7 +1076,11 @@ function UserRow({ name, email, projects, avatar }) {
    PROJECT ROW
 ========================================================= */
 
-function ProjectRow({ name, user, type }) {
+function ProjectRow({
+  name,
+  user,
+  type,
+}) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-[#edf0eb] p-3">
       <div>
@@ -724,10 +1101,85 @@ function ProjectRow({ name, user, type }) {
 }
 
 /* =========================================================
+   QUERY ROW
+========================================================= */
+
+function QueryRow({
+  name,
+  email,
+  subject,
+  status,
+  date,
+}) {
+  const statusStyles = {
+    new: "bg-[#eaf5ef] text-[#14734f]",
+    read: "bg-[#eef2f5] text-[#596771]",
+    resolved:
+      "bg-[#e9f1ed] text-[#356b56]",
+  };
+
+  const formattedDate = date
+    ? new Date(date).toLocaleDateString(
+        "en-US",
+        {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }
+      )
+    : "—";
+
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-[#edf0eb] p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e6eee7] text-[9px] font-semibold text-[#174d3d]">
+            {initials(name)}
+          </div>
+
+          <div className="min-w-0">
+            <p className="truncate text-[11px] font-semibold text-[#173d32]">
+              {name}
+            </p>
+
+            <p className="truncate text-[9px] text-[#8a948e]">
+              {email}
+            </p>
+          </div>
+        </div>
+
+        <p className="mt-2 truncate pl-12 text-[10px] text-[#596760]">
+          {subject}
+        </p>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-3 pl-12 sm:pl-0">
+        <span
+          className={`rounded-full px-2.5 py-1 text-[8px] font-semibold capitalize ${
+            statusStyles[status] ||
+            "bg-[#edf0eb] text-[#68756e]"
+          }`}
+        >
+          {status}
+        </span>
+
+        <span className="text-[9px] text-[#8a948e]">
+          {formattedDate}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
    ACTIVITY
 ========================================================= */
 
-function Activity({ label, value, width }) {
+function Activity({
+  label,
+  value,
+  width,
+}) {
   return (
     <div>
       <div className="mb-2 flex justify-between">
@@ -778,7 +1230,9 @@ function initials(name = "") {
       .split(/\s+/)
       .filter(Boolean)
       .slice(0, 2)
-      .map((word) => word[0]?.toUpperCase())
+      .map((word) =>
+        word[0]?.toUpperCase()
+      )
       .join("") || "U"
   );
 }
