@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { listProjects } from "../services/projectApi";
@@ -16,10 +15,10 @@ const Icon = ({ name, size = 18 }) => {
 
     grid: (
       <>
-        <rect x="3" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" />
-        <rect x="14" y="14" width="7" height="7" rx="1" />
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
       </>
     ),
 
@@ -79,6 +78,19 @@ const Icon = ({ name, size = 18 }) => {
         <path d="m20 20-4-4" />
       </>
     ),
+
+    arrow: (
+      <>
+        <path d="M5 12h14" />
+        <path d="m13 6 6 6-6 6" />
+      </>
+    ),
+
+    spark: (
+      <>
+        <path d="m12 3 1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3Z" />
+      </>
+    ),
   };
 
   return (
@@ -127,19 +139,19 @@ function Sidebar({ navigate, active, onLogout }) {
   ];
 
   return (
-    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[245px] flex-col bg-[#123d32] text-white lg:flex">
-      {/* LOGO */}
-      <div className="flex h-[76px] items-center gap-3 border-b border-white/10 px-7">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eaf1e8] text-[#123d32]">
-          <span className="text-xl">⌂</span>
+    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] flex-col bg-[#123d32] text-white lg:flex">
+      {/* BRAND */}
+      <div className="flex h-[82px] items-center gap-3 border-b border-white/10 px-7">
+        <div className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#eef4ec] text-[#123d32] shadow-sm">
+          <span className="font-serif text-[21px]">⌂</span>
         </div>
 
         <div>
-          <div className="font-serif text-[17px] font-semibold">
+          <div className="font-serif text-[18px] font-semibold tracking-[-0.3px]">
             DreamHouse
           </div>
 
-          <div className="text-[8px] uppercase tracking-[3px] text-white/55">
+          <div className="mt-0.5 text-[8px] uppercase tracking-[3px] text-white/45">
             Planner
           </div>
         </div>
@@ -148,7 +160,7 @@ function Sidebar({ navigate, active, onLogout }) {
       {/* MENU */}
       <nav className="flex-1 px-4 py-7">
         <div className="mb-3 px-3 text-[9px] font-semibold uppercase tracking-[2px] text-white/35">
-          Menu
+          Workspace
         </div>
 
         <div className="space-y-1.5">
@@ -159,39 +171,54 @@ function Sidebar({ navigate, active, onLogout }) {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-[12px] transition ${
+                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-[12px] transition-all duration-200 ${
                   isActive
-                    ? "bg-[#315f50] text-white shadow-sm"
-                    : "text-white/65 hover:bg-white/5 hover:text-white"
+                    ? "bg-[#315f50] text-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+                    : "text-white/60 hover:bg-white/[0.06] hover:text-white"
                 }`}
               >
-                <Icon name={item.icon} size={16} />
+                <span
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
+                    isActive
+                      ? "bg-white/10"
+                      : "bg-transparent group-hover:bg-white/5"
+                  }`}
+                >
+                  <Icon name={item.icon} size={16} />
+                </span>
+
                 {item.label}
               </button>
             );
           })}
         </div>
 
-        <div className="mb-3 mt-9 px-3 text-[9px] font-semibold uppercase tracking-[2px] text-white/35">
+        <div className="mb-3 mt-10 px-3 text-[9px] font-semibold uppercase tracking-[2px] text-white/35">
           Website
         </div>
 
         <button
           onClick={() => navigate("/")}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-[12px] text-white/65 transition hover:bg-white/5 hover:text-white"
+          className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-[12px] text-white/60 transition hover:bg-white/[0.06] hover:text-white"
         >
-          <Icon name="home" size={16} />
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg">
+            <Icon name="home" size={16} />
+          </span>
+
           Home
         </button>
       </nav>
 
-      {/* LOGOUT */}
+      {/* SIDEBAR FOOTER */}
       <div className="border-t border-white/10 p-4">
         <button
           onClick={onLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[12px] text-white/65 transition hover:bg-white/5 hover:text-white"
+          className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-[12px] text-white/55 transition hover:bg-white/[0.06] hover:text-white"
         >
-          <Icon name="logout" size={16} />
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg">
+            <Icon name="logout" size={16} />
+          </span>
+
           Logout
         </button>
       </div>
@@ -202,11 +229,7 @@ function Sidebar({ navigate, active, onLogout }) {
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  // IMPORTANT:
-  // Dashboard starts EMPTY.
-  // Only projects returned from the API will appear here.
   const [projects, setProjects] = useState([]);
-
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -263,57 +286,80 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f5ed] text-[#173d32]">
+    <div className="min-h-screen bg-[#f5f6f1] text-[#173d32]">
       <Sidebar
         navigate={navigate}
         active="/dashboard"
         onLogout={logout}
       />
 
-      <main className="min-h-screen lg:ml-[245px]">
+      <main className="min-h-screen lg:ml-[250px]">
         {/* TOP BAR */}
-        <header className="flex h-[76px] items-center justify-between border-b border-[#dfe3dc] bg-[#faf9f4] px-6 sm:px-8">
+        <header className="sticky top-0 z-30 flex h-[78px] items-center justify-between border-b border-[#e0e5df] bg-[#fafbf7]/95 px-5 backdrop-blur-md sm:px-8">
           <div>
-            <p className="text-[10px] uppercase tracking-[2px] text-[#718078]">
-              Dashboard
+            <p className="text-[9px] font-semibold uppercase tracking-[2.2px] text-[#829087]">
+              Workspace
             </p>
 
-            <h1 className="font-serif text-[20px] font-semibold text-[#173d32]">
-              Welcome back, {userName} 👋
+            <h1 className="mt-1 font-serif text-[20px] font-semibold tracking-[-0.3px] text-[#173d32]">
+              Dashboard
             </h1>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/create-project")}
-              className="hidden rounded-xl bg-[#174d3d] px-5 py-2.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-[#103d30] sm:flex sm:items-center sm:gap-2"
+              className="hidden items-center gap-2 rounded-xl bg-[#174d3d] px-5 py-2.5 text-[11px] font-semibold text-white shadow-[0_8px_20px_rgba(23,77,61,0.15)] transition hover:-translate-y-0.5 hover:bg-[#103d30] sm:flex"
             >
               <Icon name="plus" size={14} />
               Create New Project
             </button>
 
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d8ded7] bg-white text-[11px] font-semibold">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d9e0d8] bg-white text-[11px] font-bold text-[#174d3d] shadow-sm">
               {userName.charAt(0).toUpperCase()}
             </div>
           </div>
         </header>
 
-        <div className="p-5 sm:p-7 xl:p-9">
-          {/* WELCOME */}
-          <section className="mb-7">
-            <h2 className="font-serif text-[27px] font-semibold">
-              Good Morning, {userName} 👋
-            </h2>
+        <div className="mx-auto max-w-[1450px] p-5 sm:p-7 xl:p-9">
+          {/* WELCOME HERO */}
+          <section className="relative mb-8 overflow-hidden rounded-[24px] bg-[#173f33] px-6 py-7 text-white shadow-[0_15px_45px_rgba(31,65,53,0.12)] sm:px-8 sm:py-8">
+            <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full border border-white/10" />
+            <div className="absolute -right-5 -bottom-28 h-60 w-60 rounded-full border border-white/[0.06]" />
 
-            <p className="mt-1 text-[12px] text-[#718078]">
-              Plan your dream home today.
-            </p>
+            <div className="relative z-10 max-w-[680px]">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-3 py-1.5 text-[9px] uppercase tracking-[1.5px] text-white/65">
+                <Icon name="spark" size={12} />
+                Your home planning workspace
+              </div>
+
+              <h2 className="font-serif text-[28px] font-semibold leading-tight tracking-[-0.5px] sm:text-[34px]">
+                Good Morning, {userName} 👋
+              </h2>
+
+              <p className="mt-2 max-w-[520px] text-[11px] leading-6 text-white/60 sm:text-[12px]">
+                Turn your ideas into a beautiful home plan. Create floor
+                plans, explore 3D views and get smart AI suggestions.
+              </p>
+
+              <button
+                onClick={() => navigate("/create-project")}
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#eef4ec] px-5 py-2.5 text-[10px] font-bold text-[#173d32] transition hover:-translate-y-0.5 hover:bg-white"
+              >
+                Start Planning
+                <Icon name="arrow" size={14} />
+              </button>
+            </div>
           </section>
 
           {/* QUICK ACTIONS */}
-          <section className="mb-8">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-serif text-[18px] font-semibold">
+          <section className="mb-9">
+            <div className="mb-4">
+              <p className="text-[9px] font-semibold uppercase tracking-[2px] text-[#8a958f]">
+                Get started
+              </p>
+
+              <h3 className="mt-1 font-serif text-[21px] font-semibold">
                 Quick Actions
               </h3>
             </div>
@@ -336,14 +382,14 @@ export default function Dashboard() {
               <QuickAction
                 icon="cube"
                 title="3D Viewer"
-                text="View your house in 3D"
+                text="Explore your home in 3D"
                 onClick={() => navigate("/3d-view")}
               />
 
               <QuickAction
                 icon="template"
                 title="Templates"
-                text="Explore ready designs"
+                text="Explore ready-made designs"
                 onClick={() => navigate("/templates")}
               />
             </div>
@@ -351,13 +397,17 @@ export default function Dashboard() {
 
           {/* PROJECTS */}
           <section>
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <h3 className="font-serif text-[20px] font-semibold">
+                <p className="text-[9px] font-semibold uppercase tracking-[2px] text-[#8a958f]">
+                  Your workspace
+                </p>
+
+                <h3 className="mt-1 font-serif text-[22px] font-semibold">
                   Your Projects
                 </h3>
 
-                <p className="mt-1 text-[11px] text-[#718078]">
+                <p className="mt-1 text-[11px] text-[#7b8780]">
                   Your generated and saved house designs appear here.
                 </p>
               </div>
@@ -369,33 +419,32 @@ export default function Dashboard() {
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Search projects..."
-                      className="w-[180px] rounded-xl border border-[#dce2da] bg-white py-2.5 pl-9 pr-3 text-[11px] outline-none transition focus:border-[#174d3d]"
+                      className="w-[200px] rounded-xl border border-[#dce2da] bg-white py-2.5 pl-9 pr-3 text-[10px] text-[#173d32] outline-none transition placeholder:text-[#a0aaa4] focus:border-[#174d3d] focus:ring-2 focus:ring-[#174d3d]/5"
                     />
 
-                    <div className="pointer-events-none absolute left-3 top-[10px] text-[#839087]">
+                    <div className="pointer-events-none absolute left-3 top-[10px] text-[#8a958f]">
                       <Icon name="search" size={14} />
                     </div>
                   </div>
 
-                  <button className="rounded-xl border border-[#dce2da] bg-white px-4 text-[11px] text-[#526159]">
+                  <button className="rounded-xl border border-[#dce2da] bg-white px-4 text-[10px] font-medium text-[#526159] transition hover:border-[#bdcabe]">
                     Latest ▾
                   </button>
                 </div>
               )}
             </div>
 
-            {/* LOADING */}
             {loading ? (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {[1, 2, 3].map((item) => (
                   <div
                     key={item}
-                    className="overflow-hidden rounded-2xl border border-[#dfe4dd] bg-white"
+                    className="overflow-hidden rounded-[20px] border border-[#e0e5df] bg-white"
                   >
-                    <div className="h-[175px] animate-pulse bg-[#e9eee8]" />
+                    <div className="h-[190px] animate-pulse bg-[#e8ede7]" />
 
-                    <div className="space-y-3 p-4">
-                      <div className="h-4 w-32 animate-pulse rounded bg-[#e9eee8]" />
+                    <div className="space-y-3 p-5">
+                      <div className="h-4 w-32 animate-pulse rounded bg-[#e8ede7]" />
                       <div className="h-3 w-24 animate-pulse rounded bg-[#edf1ec]" />
                       <div className="h-9 w-full animate-pulse rounded-xl bg-[#edf1ec]" />
                     </div>
@@ -431,20 +480,58 @@ export default function Dashboard() {
             <SmallStat
               title="Total Projects"
               value={projects.length}
+              icon="plan"
             />
 
             <SmallStat
               title="AI Plans Created"
               value="12"
+              icon="ai"
             />
 
             <SmallStat
               title="3D Views"
               value="8"
+              icon="cube"
             />
           </section>
         </div>
       </main>
+
+      {/* MOBILE BOTTOM NAV */}
+      <div className="fixed bottom-4 left-4 right-4 z-50 flex items-center justify-around rounded-2xl border border-[#dfe5df] bg-white/95 p-2 shadow-[0_12px_35px_rgba(25,55,45,0.14)] backdrop-blur-md lg:hidden">
+        <MobileNav
+          icon="grid"
+          label="Home"
+          active
+          onClick={() => navigate("/dashboard")}
+        />
+
+        <MobileNav
+          icon="plan"
+          label="Projects"
+          onClick={() => navigate("/my-designs")}
+        />
+
+        <button
+          onClick={() => navigate("/create-project")}
+          className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#174d3d] text-white shadow-lg"
+        >
+          <Icon name="plus" size={19} />
+        </button>
+
+        <MobileNav
+          icon="ai"
+          label="AI"
+          onClick={() => navigate("/ai-planner")}
+        />
+
+        <MobileNav
+          icon="settings"
+          label="Settings"
+          onClick={() => navigate("/settings")}
+        />
+      </div>
     </div>
   );
 }
@@ -453,54 +540,71 @@ function QuickAction({ icon, title, text, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="group rounded-2xl border border-[#dfe4dd] bg-white p-4 text-left transition duration-300 hover:-translate-y-0.5 hover:border-[#b9c9be] hover:shadow-lg hover:shadow-[#315348]/10"
+      className="group relative overflow-hidden rounded-[19px] border border-[#e0e5df] bg-white p-5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#b9c9be] hover:shadow-[0_14px_35px_rgba(39,73,60,0.09)]"
     >
-      <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-[#edf3ed] text-[#174d3d]">
-        <Icon name={icon} size={17} />
+      <div className="absolute right-0 top-0 h-20 w-20 translate-x-8 -translate-y-8 rounded-full bg-[#f0f5ef] transition duration-300 group-hover:scale-125" />
+
+      <div className="relative z-10">
+        <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-[#edf3ed] text-[#174d3d] transition group-hover:bg-[#174d3d] group-hover:text-white">
+          <Icon name={icon} size={18} />
+        </div>
+
+        <h4 className="text-[12px] font-semibold text-[#173d32]">
+          {title}
+        </h4>
+
+        <p className="mt-1 text-[10px] leading-5 text-[#7d8982]">
+          {text}
+        </p>
+
+        <div className="mt-4 flex items-center gap-1 text-[9px] font-semibold text-[#174d3d] opacity-0 transition group-hover:opacity-100">
+          Open
+          <Icon name="arrow" size={11} />
+        </div>
       </div>
-
-      <h4 className="text-[12px] font-semibold text-[#173d32]">
-        {title}
-      </h4>
-
-      <p className="mt-1 text-[10px] leading-5 text-[#7a857f]">
-        {text}
-      </p>
     </button>
   );
 }
 
 function ProjectCard({ project, onOpen }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#dfe4dd] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#315348]/10">
-      {/* PROJECT IMAGE */}
-      <div className="h-[175px] overflow-hidden bg-[#edf3ed]">
+    <div className="group overflow-hidden rounded-[21px] border border-[#e0e5df] bg-white transition-all duration-300 hover:-translate-y-1 hover:border-[#cbd7cd] hover:shadow-[0_18px_40px_rgba(39,73,60,0.10)]">
+      {/* IMAGE */}
+      <div className="relative h-[190px] overflow-hidden bg-[#edf3ed]">
         {project.image ? (
-          <img
-            src={project.image}
-            alt={project.name}
-            className="h-full w-full object-cover transition duration-500 hover:scale-105"
-          />
+          <>
+            <img
+              src={project.image}
+              alt={project.name}
+              className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+            />
+
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-60" />
+          </>
         ) : (
           <div className="flex h-full w-full items-center justify-center text-[#789084]">
             <div className="text-center">
-              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white">
-                <Icon name="plan" size={20} />
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+                <Icon name="plan" size={21} />
               </div>
 
-              <p className="text-[10px]">
+              <p className="text-[10px] font-medium">
                 Floor Plan Preview
               </p>
             </div>
           </div>
         )}
+
+        <div className="absolute left-3 top-3 rounded-full border border-white/20 bg-black/20 px-3 py-1.5 text-[8px] font-medium text-white backdrop-blur-md">
+          House Design
+        </div>
       </div>
 
-      {/* PROJECT DETAILS */}
-      <div className="p-4">
+      {/* DETAILS */}
+      <div className="p-5">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <h4 className="font-serif text-[16px] font-semibold">
+          <div className="min-w-0">
+            <h4 className="truncate font-serif text-[17px] font-semibold text-[#173d32]">
               {project.name}
             </h4>
 
@@ -509,20 +613,21 @@ function ProjectCard({ project, onOpen }) {
             </p>
           </div>
 
-          <button className="text-[#829087]">
+          <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[#829087] transition hover:bg-[#f0f4ef]">
             •••
           </button>
         </div>
 
-        <p className="mt-3 text-[9px] text-[#99a19c]">
+        <p className="mt-3 text-[9px] text-[#9aa39e]">
           {project.edited}
         </p>
 
         <button
           onClick={onOpen}
-          className="mt-4 w-full rounded-xl border border-[#cbd8ce] py-2.5 text-[10px] font-semibold text-[#174d3d] transition hover:bg-[#edf3ed]"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[#cbd8ce] py-2.5 text-[10px] font-semibold text-[#174d3d] transition hover:bg-[#edf3ed]"
         >
-          Open Project →
+          Open Project
+          <Icon name="arrow" size={12} />
         </button>
       </div>
     </div>
@@ -531,43 +636,71 @@ function ProjectCard({ project, onOpen }) {
 
 function EmptyProjects({ hasSearch, onCreate }) {
   return (
-    <div className="rounded-2xl border border-dashed border-[#cbd5cc] bg-white p-12 text-center">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#edf3ed] text-[#174d3d]">
-        <Icon name="plan" size={24} />
+    <div className="relative overflow-hidden rounded-[22px] border border-dashed border-[#cbd5cc] bg-white px-6 py-14 text-center">
+      <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-[#f2f6f1]" />
+      <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-[#f5f7f3]" />
+
+      <div className="relative z-10">
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#edf3ed] text-[#174d3d]">
+          <Icon name="plan" size={26} />
+        </div>
+
+        <p className="font-serif text-[21px] font-semibold text-[#173d32]">
+          {hasSearch ? "No projects found" : "Your workspace is ready"}
+        </p>
+
+        <p className="mx-auto mt-2 max-w-[390px] text-[11px] leading-6 text-[#718078]">
+          {hasSearch
+            ? "Try searching with another project name."
+            : "Create your first floor plan and your saved design will appear here automatically."}
+        </p>
+
+        {!hasSearch && (
+          <button
+            onClick={onCreate}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#174d3d] px-5 py-2.5 text-[10px] font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#103d30]"
+          >
+            <Icon name="plus" size={13} />
+            Create New Project
+          </button>
+        )}
       </div>
-
-      <p className="font-serif text-[20px] font-semibold text-[#173d32]">
-        {hasSearch ? "No projects found" : "No designs yet"}
-      </p>
-
-      <p className="mx-auto mt-2 max-w-sm text-[11px] leading-5 text-[#718078]">
-        {hasSearch
-          ? "Try searching with another project name."
-          : "Create your first floor plan and your saved design will appear here automatically."}
-      </p>
-
-      {!hasSearch && (
-        <button
-          onClick={onCreate}
-          className="mt-5 rounded-xl bg-[#174d3d] px-5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#103d30]"
-        >
-          Create New Project
-        </button>
-      )}
     </div>
   );
 }
 
-function SmallStat({ title, value }) {
+function SmallStat({ title, value, icon }) {
   return (
-    <div className="rounded-2xl border border-[#dfe4dd] bg-white p-4">
-      <p className="text-[10px] text-[#7d8982]">
-        {title}
-      </p>
+    <div className="group flex items-center gap-4 rounded-[19px] border border-[#e0e5df] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-[0_10px_25px_rgba(39,73,60,0.06)]">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#edf3ed] text-[#174d3d] transition group-hover:bg-[#174d3d] group-hover:text-white">
+        <Icon name={icon} size={18} />
+      </div>
 
-      <p className="mt-1 font-serif text-[24px] font-semibold text-[#173d32]">
-        {value}
-      </p>
+      <div>
+        <p className="text-[10px] text-[#7d8982]">
+          {title}
+        </p>
+
+        <p className="mt-0.5 font-serif text-[25px] font-semibold text-[#173d32]">
+          {value}
+        </p>
+      </div>
     </div>
+  );
+}
+
+function MobileNav({ icon, label, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex min-w-[48px] flex-col items-center gap-1 rounded-xl px-2 py-1.5 transition ${
+        active
+          ? "text-[#174d3d]"
+          : "text-[#8b9690] hover:text-[#174d3d]"
+      }`}
+    >
+      <Icon name={icon} size={17} />
+      <span className="text-[7px] font-medium">{label}</span>
+    </button>
   );
 }

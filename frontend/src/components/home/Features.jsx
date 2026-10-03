@@ -1,123 +1,356 @@
+import {
+  ArrowUpRight,
+  Sparkles,
+  Ruler,
+  LayoutGrid,
+  Box,
+  Save,
+  Smartphone,
+  Layers3,
+  Share2,
+} from "lucide-react";
+
+import floorPlanImage from "../../assets/features/floor-plan.jpg";
+import threeDImage from "../../assets/features/3d-view.jpg";
+import aiPlannerImage from "../../assets/features/ai-planner.jpg";
+import measurementsImage from "../../assets/features/measurements.jpg";
+import saveProjectImage from "../../assets/features/save-project.jpg";
+import responsiveImage from "../../assets/features/responsive.jpg";
+import templatesImage from "../../assets/features/templates.jpg";
+import exportImage from "../../assets/features/export.jpg";
+
+/* =========================================================
+   FEATURES DATA
+========================================================= */
+
 const features = [
   {
-    image:
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=900&q=90",
+    number: "01",
+    image: floorPlanImage,
+    icon: LayoutGrid,
+    tag: "PLAN",
     title: "2D Floor Planner",
-    text: "Create accurate rooms, walls, doors and windows with an easy editor.",
+    text: "Create accurate rooms, walls, doors and windows with an intuitive floor plan editor.",
   },
   {
-    image:
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=90",
+    number: "02",
+    image: threeDImage,
+    icon: Box,
+    tag: "VISUALIZE",
     title: "3D Visualization",
-    text: "Turn your floor plan into a simple 3D view to understand your space.",
+    text: "Transform your floor plan into a clear 3D view and understand your space better.",
   },
   {
-    image:
-      "https://images.unsplash.com/photo-1535378917042-10a22c95931a?auto=format&fit=crop&w=900&q=90",
+    number: "03",
+    image: aiPlannerImage,
+    icon: Sparkles,
+    tag: "AI POWERED",
     title: "AI House Assistant",
-    text: "Describe what you want and get useful planning suggestions.",
+    text: "Describe your requirements and receive smart suggestions for rooms and layouts.",
   },
   {
-    image:
-      "https://images.unsplash.com/photo-1581092921461-eab62e97a780?auto=format&fit=crop&w=900&q=90",
+    number: "04",
+    image: measurementsImage,
+    icon: Ruler,
+    tag: "PRECISION",
     title: "Smart Measurements",
-    text: "Keep room sizes and plot dimensions organized while designing.",
+    text: "Keep plot dimensions, room sizes and measurements organized while designing.",
   },
   {
-    image:
-      "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=900&q=90",
+    number: "05",
+    image: saveProjectImage,
+    icon: Save,
+    tag: "PROJECTS",
     title: "Save & Manage",
-    text: "Save your projects and return to edit them whenever you want.",
+    text: "Save your house projects and come back anytime to continue your design.",
   },
- {
-  image:
-    "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=90",
-  title: "Responsive Design",
-  text: "Plan comfortably across desktop, tablet and mobile screens.",
-},
   {
-    image:
-      "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=900&q=90",
+    number: "06",
+    image: responsiveImage,
+    icon: Smartphone,
+    tag: "EVERYWHERE",
+    title: "Responsive Design",
+    text: "Plan comfortably across desktop, tablet and mobile with a flexible workspace.",
+  },
+  {
+    number: "07",
+    image: templatesImage,
+    icon: Layers3,
+    tag: "TEMPLATES",
     title: "Ready Templates",
-    text: "Start faster with practical house layouts and design ideas.",
+    text: "Start faster with practical house layouts and inspiring design ideas.",
   },
   {
-    image:
-      "https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=900&q=90",
+    number: "08",
+    image: exportImage,
+    icon: Share2,
+    tag: "SHARE",
     title: "Export & Share",
-    text: "Export your finished plan for sharing, printing or reference.",
+    text: "Export your finished floor plan for sharing, printing or future reference.",
   },
 ];
+
+/* =========================================================
+   FEATURE CARD
+========================================================= */
+
+function FeatureCard({ feature }) {
+  const Icon = feature.icon;
+
+  return (
+    <article className="group relative overflow-hidden rounded-[28px] border border-[#dfe7e2] bg-white p-2.5 shadow-[0_8px_35px_rgba(20,55,44,0.045)] transition-all duration-500 hover:-translate-y-2 hover:border-[#c7d8d0] hover:shadow-[0_25px_55px_rgba(20,55,44,0.13)]">
+
+      {/* IMAGE */}
+
+      <div className="relative h-[205px] overflow-hidden rounded-[21px]">
+
+        <img
+          src={feature.image}
+          alt={feature.title}
+          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.08]"
+        />
+
+        {/* Dark gradient */}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-[#102f27]/70 via-[#102f27]/5 to-transparent" />
+
+        {/* Top number */}
+
+        <div className="absolute left-4 top-4 flex h-9 items-center rounded-full border border-white/50 bg-white/90 px-3 backdrop-blur-md">
+          <span className="text-[10px] font-bold tracking-[0.12em] text-[#0b5d46]">
+            {feature.number}
+          </span>
+        </div>
+
+        {/* Icon */}
+
+        <div className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#0b5d46]/95 text-white shadow-lg backdrop-blur-md transition-all duration-300 group-hover:rotate-6 group-hover:scale-110">
+          <Icon size={17} strokeWidth={1.8} />
+        </div>
+
+        {/* Image bottom label */}
+
+        <div className="absolute bottom-4 left-4">
+
+          <span className="rounded-full border border-white/30 bg-white/15 px-3 py-1.5 text-[8px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-md">
+            {feature.tag}
+          </span>
+
+        </div>
+
+        {/* Floating arrow */}
+
+        <div className="absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#0b5d46] opacity-0 shadow-lg transition-all duration-300 group-hover:opacity-100">
+          <ArrowUpRight
+            size={17}
+            strokeWidth={2}
+            className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          />
+        </div>
+
+      </div>
+
+      {/* CONTENT */}
+
+      <div className="px-3 pb-4 pt-5">
+
+        <h3 className="font-serif text-[21px] font-semibold leading-tight tracking-[-0.025em] text-[#173d32]">
+          {feature.title}
+        </h3>
+
+        <p className="mt-3 min-h-[70px] text-[12.5px] leading-[1.8] text-[#687871]">
+          {feature.text}
+        </p>
+
+        {/* Bottom */}
+
+        <div className="mt-4 flex items-center justify-between border-t border-[#edf0ed] pt-4">
+
+          <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#7b8983]">
+            DreamHouse Feature
+          </span>
+
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#edf6f1] text-[#0b5d46] transition-all duration-300 group-hover:bg-[#0b5d46] group-hover:text-white">
+            <ArrowUpRight size={13} />
+          </span>
+
+        </div>
+
+      </div>
+    </article>
+  );
+}
+
+/* =========================================================
+   FEATURES SECTION
+========================================================= */
 
 export default function Features() {
   return (
     <section
       id="features"
-      className="bg-[#fbfaf5] px-5 py-16 sm:px-8 lg:px-10"
+      className="relative overflow-hidden bg-[#faf9f4] px-5 py-20 sm:px-8 lg:px-10 lg:py-28"
     >
-      <div className="mx-auto max-w-[1200px]">
 
-        {/* Heading */}
-        <div className="max-w-[700px]">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6f8178]">
-            Everything you need
-          </p>
+      {/* =====================================================
+          BACKGROUND
+      ===================================================== */}
 
-          <h2 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.03em] text-[#183b31] sm:text-5xl">
-            A smarter way to plan your home.
-          </h2>
+      <div className="pointer-events-none absolute -left-40 top-20 h-[420px] w-[420px] rounded-full bg-[#e5f2ec] opacity-60 blur-3xl" />
 
-          <p className="mt-5 text-[14px] leading-7 text-[#5f7068] sm:text-[16px]">
-            From the first idea to the final floor plan, DreamHouse keeps the
-            entire planning process simple and visual.
-          </p>
-        </div>
+      <div className="pointer-events-none absolute -right-40 bottom-0 h-[450px] w-[450px] rounded-full bg-[#e8f3ee] opacity-60 blur-3xl" />
 
-        {/* Feature Cards */}
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="pointer-events-none absolute left-1/2 top-[45%] h-[300px] w-[300px] -translate-x-1/2 rounded-full bg-[#f0f6f2] blur-3xl" />
 
-          {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="group overflow-hidden rounded-3xl border border-[#dce2da] bg-white p-4 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#315348]/10"
-            >
+      <div className="relative mx-auto max-w-[1250px]">
 
-              {/* Image */}
-              <div className="h-[180px] overflow-hidden rounded-2xl bg-[#eef1eb]">
-                <img
-                  src={feature.image}
-                  alt={feature.title}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                />
-              </div>
+        {/* =====================================================
+            HEADER
+        ===================================================== */}
 
-              {/* Text */}
-              <div className="px-2 pb-2 pt-5">
+        <div className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-end">
 
-                <h3 className="font-serif text-[20px] font-semibold leading-tight text-[#173d32]">
-                  {feature.title}
-                </h3>
+          <div className="max-w-[720px]">
 
-                <p className="mt-3 text-[13px] leading-6 text-[#60716a]">
-                  {feature.text}
-                </p>
+            {/* Eyebrow */}
 
-                {/* Learn More */}
-                <div className="mt-5 flex items-center gap-2 text-[11px] font-semibold text-[#0b5d46]">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0b5d46] text-sm text-white">
-                    →
-                  </span>
+            <div className="mb-5 flex items-center gap-3">
 
-                  <span>Learn more</span>
+              <span className="h-px w-10 bg-[#0b5d46]" />
 
-                  <span>→</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#72827b]">
+                Everything you need
+              </span>
+
+            </div>
+
+            {/* Heading */}
+
+            <h2 className="font-serif text-[42px] font-semibold leading-[1.04] tracking-[-0.045em] text-[#173d32] sm:text-[54px] lg:text-[60px]">
+
+              One workspace.
+
+              <span className="block text-[#0b5d46]">
+                Endless possibilities.
+              </span>
+
+            </h2>
+
+            <p className="mt-6 max-w-[620px] text-[14px] leading-7 text-[#66766f] sm:text-[15px]">
+              Everything you need to turn an idea into a thoughtfully planned
+              home — from your first sketch to a complete visual floor plan.
+            </p>
+
+          </div>
+
+          {/* =================================================
+              FEATURE SUMMARY
+          ================================================= */}
+
+          <div className="hidden lg:block">
+
+            <div className="relative w-[230px] rounded-[24px] border border-[#dce5df] bg-white p-5 shadow-[0_15px_40px_rgba(20,55,44,0.07)]">
+
+              <div className="flex items-center justify-between">
+
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e4f2ec] text-[#0b5d46]">
+                  <Sparkles size={18} />
                 </div>
 
+                <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#89958f]">
+                  Built for you
+                </span>
+
               </div>
+
+              <p className="mt-5 font-serif text-[25px] font-semibold tracking-[-0.03em] text-[#173d32]">
+                08
+              </p>
+
+              <p className="mt-1 text-[11px] leading-5 text-[#728079]">
+                powerful tools to make home planning easier.
+              </p>
+
+              <div className="mt-4 h-1 overflow-hidden rounded-full bg-[#e8efeb]">
+                <div className="h-full w-[82%] rounded-full bg-[#0b5d46]" />
+              </div>
+
             </div>
+
+          </div>
+
+        </div>
+
+        {/* =====================================================
+            CARDS
+        ===================================================== */}
+
+        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+
+          {features.map((feature) => (
+            <FeatureCard
+              key={feature.title}
+              feature={feature}
+            />
           ))}
 
         </div>
+
+        {/* =====================================================
+            BOTTOM CTA STRIP
+        ===================================================== */}
+
+        <div className="relative mt-14 overflow-hidden rounded-[28px] border border-[#d5e2db] bg-[#103d31] px-6 py-7 shadow-[0_20px_50px_rgba(16,61,49,0.12)] sm:px-8 sm:py-8">
+
+          {/* Decorative circle */}
+
+          <div className="pointer-events-none absolute -right-12 -top-20 h-48 w-48 rounded-full border-[30px] border-white/5" />
+
+          <div className="pointer-events-none absolute -bottom-20 right-40 h-36 w-36 rounded-full bg-[#2f725d]/20 blur-2xl" />
+
+          <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+
+            <div>
+
+              <div className="flex items-center gap-2">
+
+                <Sparkles
+                  size={14}
+                  className="text-[#b7d8c9]"
+                />
+
+                <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#b7d8c9]">
+                  Designed for dreamers
+                </span>
+
+              </div>
+
+              <h3 className="mt-2 font-serif text-[25px] font-semibold tracking-[-0.025em] text-white sm:text-[29px]">
+                Plan it. Visualize it. Make it yours.
+              </h3>
+
+            </div>
+
+            <div className="flex shrink-0 items-center gap-3">
+
+              <div className="flex -space-x-2">
+
+                <div className="h-8 w-8 rounded-full border-2 border-[#103d31] bg-[#dcebe4]" />
+                <div className="h-8 w-8 rounded-full border-2 border-[#103d31] bg-[#b7d8c9]" />
+                <div className="h-8 w-8 rounded-full border-2 border-[#103d31] bg-[#8eb7a5]" />
+
+              </div>
+
+              <span className="text-[10px] font-medium text-[#c8ddd4]">
+                Your ideas, your home.
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
     </section>
   );

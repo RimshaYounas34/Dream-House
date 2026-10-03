@@ -1,105 +1,149 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Home, Sparkles, ArrowRight, Menu } from "lucide-react";
 
 export default function Header() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const loggedIn = localStorage.getItem("dreamhouse_logged_in");
-    setIsLoggedIn(loggedIn === "true");
-  }, []);
-
   return (
-    <header className="absolute left-0 top-0 z-50 w-full">
-      <div className="mx-auto flex max-w-[1280px] items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
+    <header className="relative z-[100] w-full border-b border-[#e8eeeb] bg-white">
 
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e8eee5] text-[#0b5d46]">
-            <svg width="25" height="25" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M3 11.5 12 4l9 7.5V21H3V11.5Z"
-                stroke="currentColor"
-                strokeWidth="1.7"
-              />
-              <path
-                d="M8 21v-6h8v6M12 4v4"
-                stroke="currentColor"
-                strokeWidth="1.7"
-              />
-            </svg>
+      <div className="mx-auto flex h-[86px] w-full max-w-[1550px] items-center justify-between px-6 sm:px-10 lg:px-14 xl:px-20">
+
+        {/* =====================================================
+            LOGO
+        ===================================================== */}
+
+        <Link
+          to="/"
+          className="group flex shrink-0 items-center gap-3.5"
+        >
+          <div className="flex h-[50px] w-[50px] items-center justify-center rounded-[14px] bg-[#eef7f3] transition-all duration-300 group-hover:bg-[#08724f]">
+            <Home
+              size={27}
+              strokeWidth={1.8}
+              className="text-[#08724f] transition-colors duration-300 group-hover:text-white"
+            />
           </div>
 
-          <div>
-            <p className="font-serif text-base font-bold leading-none text-[#173d32]">
-              DreamHouse
+          <div className="leading-none">
+            <p className="text-[21px] font-bold tracking-[-0.04em] text-[#17342c]">
+              Dream House
             </p>
-            <p className="mt-1.5 text-[10px] font-medium tracking-[0.25em] text-[#8a928c]">
-              PLANNER
-            </p>
+
+            <div className="mt-1.5 flex items-center gap-2">
+              <span className="h-px w-5 bg-[#08724f]" />
+
+              <p className="text-[8px] font-bold uppercase tracking-[0.45em] text-[#78877f]">
+                Planner
+              </p>
+            </div>
           </div>
         </Link>
 
-        {/* Navigation */}
-        <nav className="hidden items-center gap-8 text-[11px] font-medium text-[#53615a] md:flex">
-          <a href="#home" className="transition hover:text-[#0b5d46]">
-            Home
-          </a>
+        {/* =====================================================
+            NAVIGATION
+        ===================================================== */}
 
-          <a href="#features" className="transition hover:text-[#0b5d46]">
+        <nav className="hidden items-center gap-8 lg:flex xl:gap-11">
+
+          <Link
+            to="/"
+            className="group relative px-1 py-2.5 text-[14px] font-semibold text-[#08724f]"
+          >
+            Home
+
+            <span className="absolute bottom-0 left-1/2 h-[2px] w-5 -translate-x-1/2 rounded-full bg-[#08724f]" />
+          </Link>
+
+          <a
+            href="/features"
+            className="px-1 py-2.5 text-[14px] font-medium text-[#63736e] transition-colors hover:text-[#08724f]"
+          >
             Features
           </a>
 
-          <a href="#templates" className="transition hover:text-[#0b5d46]">
-            Templates
-          </a>
-
-          <a href="#how-it-works" className="transition hover:text-[#0b5d46]">
+          <a
+            href="/how-it-works"
+            className="px-1 py-2.5 text-[14px] font-medium text-[#63736e] transition-colors hover:text-[#08724f]"
+          >
             How It Works
           </a>
 
-          <a href="#about" className="transition hover:text-[#0b5d46]">
-            About
-          </a>
+          <Link
+            to="/templates"
+            className="px-1 py-2.5 text-[14px] font-medium text-[#63736e] transition-colors hover:text-[#08724f]"
+          >
+            Templates
+          </Link>
+
+          <Link
+            to="/my-designs"
+            className="px-1 py-2.5 text-[14px] font-medium text-[#63736e] transition-colors hover:text-[#08724f]"
+          >
+            My Designs
+          </Link>
+
         </nav>
 
-        {/* Right Buttons */}
-        <div className="flex items-center gap-2.5">
+        {/* =====================================================
+            RIGHT SIDE
+        ===================================================== */}
 
-          {/* Theme Button */}
-          <button className="hidden h-10 w-10 items-center justify-center rounded-full border border-[#d9ded6] bg-white/70 text-base md:flex">
-            ☼
-          </button>
+        <div className="hidden items-center gap-4 md:flex">
 
-          {/* LOGIN / LOGOUT BUTTON */}
-          {isLoggedIn ? (
-            <button
-              onClick={() => {
-                localStorage.removeItem("dreamhouse_logged_in");
-                setIsLoggedIn(false);
-              }}
-              className="rounded-full border border-[#ccd4cc] bg-white/70 px-5 py-3 text-[11px] font-semibold text-[#315348] transition hover:bg-[#0b5d46] hover:text-white"
-            >
-              Logout
-            </button>
-          ) : (
-            <Link
-              to="/login"
-              className="rounded-full border border-[#ccd4cc] bg-white/70 px-5 py-3 text-[11px] font-semibold text-[#315348] transition hover:bg-[#0b5d46] hover:text-white"
-            >
-              Login
-            </Link>
-          )}
-
-          {/* Get Started */}
+          {/* LOGIN */}
           <Link
-            to="/create-project"
-            className="rounded-full bg-[#0b5d46] px-5 py-3 text-[11px] font-bold text-white shadow-lg shadow-[#0b5d46]/20"
+            to="/login"
+            className="px-3 py-2.5 text-[14px] font-semibold text-[#52635c] transition-colors hover:text-[#08724f]"
           >
-            Get Started
+            Login
+          </Link>
+
+          {/* SIGN UP */}
+          <Link
+            to="/signup"
+            className="group flex h-[46px] items-center gap-2 rounded-[11px] bg-[#08724f] px-5 shadow-[0_7px_20px_rgba(8,114,79,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#065d40]"
+            style={{
+              backgroundColor: "#08724f",
+            }}
+          >
+            <Sparkles
+              size={15}
+              strokeWidth={2}
+              style={{ color: "#ffffff" }}
+            />
+
+            <span
+              style={{
+                color: "#ffffff",
+                fontSize: "14px",
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Sign Up
+            </span>
+
+            <ArrowRight
+              size={14}
+              strokeWidth={2}
+              style={{ color: "#ffffff" }}
+              className="transition-transform duration-300 group-hover:translate-x-1"
+            />
           </Link>
 
         </div>
+
+        {/* =====================================================
+            MOBILE
+        ===================================================== */}
+
+        <button
+          type="button"
+          aria-label="Open menu"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#dce6e1] bg-white text-[#08724f] lg:hidden"
+        >
+          <Menu size={21} />
+        </button>
+
       </div>
     </header>
   );

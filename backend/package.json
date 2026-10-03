@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+      "create-admin": "node scripts/createAdmin.js"
+
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

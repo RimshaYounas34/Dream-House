@@ -115,7 +115,6 @@ function AdminSidebar({ navigate, active, logout }) {
     { label: "Dashboard", icon: "grid", path: "/admin" },
     { label: "Users", icon: "users", path: "/admin/users" },
     { label: "Projects", icon: "plan", path: "/admin/projects" },
-    { label: "Templates", icon: "template", path: "/templates" },
     { label: "AI Usage", icon: "ai", path: "/admin/ai-usage" },
     { label: "Reports", icon: "report", path: "/admin/reports" },
     { label: "Settings", icon: "settings", path: "/admin/settings" },

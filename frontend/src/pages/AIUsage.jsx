@@ -5,7 +5,6 @@ const menu = [
   { label: "Dashboard", icon: "▦", path: "/admin" },
   { label: "Users", icon: "♙", path: "/admin/users" },
   { label: "Projects", icon: "⌂", path: "/admin/projects" },
-  { label: "Templates", icon: "▤", path: "/templates" },
   { label: "AI Usage", icon: "✦", path: "/admin/ai-usage" },
   { label: "Reports", icon: "◒", path: "/admin/reports" },
   { label: "Settings", icon: "⚙", path: "/settings" },

@@ -1,5 +1,6 @@
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import ScrollToTop from "./components/common/ScrollToTop";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -21,10 +22,16 @@ import Users from "./pages/Users";
 import AIUsage from "./pages/AIUsage";
 import Reports from "./pages/Reports";
 import AdminSettings from "./pages/AdminSettings";
+import FeaturesPage from "./pages/Features";
+import HowItWorks from "./pages/HowItWorks";
+import AdminLogin from "./pages/AdminLogin";
 
 function App() {
   return (
     <BrowserRouter>
+      {/* Automatically scroll every new page to the top */}
+      <ScrollToTop />
+
       <Routes>
         {/* PUBLIC */}
         <Route path="/" element={<Home />} />
@@ -42,8 +49,11 @@ function App() {
         <Route path="/help" element={<Help />} />
         <Route path="/3d-view" element={<ThreeDView />} />
         <Route path="/design-method" element={<DesignMethod />} />
+        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/how-it-works" element={<HowItWorks />} />
 
         {/* ADMIN */}
+        <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<Users />} />
         <Route path="/admin/projects" element={<AdminProjects />} />

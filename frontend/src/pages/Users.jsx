@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -28,13 +29,6 @@ const Icon = ({ name, size = 18 }) => {
       <>
         <rect x="3" y="4" width="18" height="16" rx="2" />
         <path d="M8 4v16M16 4v16M3 10h5M16 14h5" />
-      </>
-    ),
-
-    template: (
-      <>
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <path d="M3 9h18M9 9v12" />
       </>
     ),
 
@@ -165,10 +159,9 @@ function AdminSidebar({ navigate, active, logout }) {
     { label: "Dashboard", icon: "grid", path: "/admin" },
     { label: "Users", icon: "users", path: "/admin/users" },
     { label: "Projects", icon: "plan", path: "/admin/projects" },
-    { label: "Templates", icon: "template", path: "/templates" },
     { label: "AI Usage", icon: "ai", path: "/admin/ai-usage" },
     { label: "Reports", icon: "report", path: "/admin/reports" },
-    { label: "Settings", icon: "settings", path: "/settings" },
+    { label: "Settings", icon: "settings", path: "/admin/settings" },
   ];
 
   return (
@@ -243,7 +236,6 @@ function AdminSidebar({ navigate, active, logout }) {
 
 /* =========================================================
    DEMO USERS
-   Later these will come from Supabase
 ========================================================= */
 
 const INITIAL_USERS = [
@@ -925,8 +917,6 @@ export default function Users() {
 
           <div className="w-full max-w-[520px] rounded-3xl border border-[#dce2db] bg-[#fbfaf5] shadow-2xl">
 
-            {/* MODAL HEADER */}
-
             <div className="flex items-center justify-between border-b border-[#e2e6e1] px-6 py-5">
 
               <div>
@@ -949,8 +939,6 @@ export default function Users() {
               </button>
 
             </div>
-
-            {/* PROFILE */}
 
             <div className="p-6">
 
@@ -987,8 +975,6 @@ export default function Users() {
 
               </div>
 
-              {/* INFO GRID */}
-
               <div className="mt-6 grid grid-cols-2 gap-3">
 
                 <InfoBox
@@ -1013,8 +999,6 @@ export default function Users() {
 
               </div>
 
-              {/* ROLE */}
-
               <div className="mt-5">
 
                 <label className="text-[9px] font-semibold uppercase tracking-[1px] text-[#7d8982]">
@@ -1036,8 +1020,6 @@ export default function Users() {
                 </select>
 
               </div>
-
-              {/* ACTIONS */}
 
               <div className="mt-5 flex flex-col gap-2 sm:flex-row">
 
@@ -1261,4 +1243,4 @@ function InfoBox({ label, value }) {
 
     </div>
   );
-}
+    }

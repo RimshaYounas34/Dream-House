@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const templates = [
+export const templates = [
   {
     id: 1,
     name: "Modern Villa",

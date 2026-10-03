@@ -1,8 +1,10 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { loginUser } from "../services/authApi";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase";
+import loginFloorplan from "../assets/login-floorplan.jpg";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -16,11 +18,10 @@ export default function Login() {
   const [error, setError] = useState("");
 
   // =========================
-  // NORMAL EMAIL LOGIN
+  // EMAIL LOGIN
   // =========================
   const handleLogin = async (e) => {
     e.preventDefault();
-
     setError("");
 
     if (!email.trim() || !password.trim()) {
@@ -44,7 +45,10 @@ export default function Login() {
 
       if (user) {
         localStorage.setItem("dreamhouse_name", user.name || "");
-        localStorage.setItem("dreamhouse_email", user.email || email);
+        localStorage.setItem(
+          "dreamhouse_email",
+          user.email || email
+        );
         localStorage.setItem(
           "dreamhouse_role",
           user.role || "User"
@@ -100,19 +104,11 @@ export default function Login() {
       });
 
       const result = await signInWithPopup(auth, provider);
-
       const user = result.user;
 
-      console.log("Google user:", user);
-
-      // --------------------------------
-      // Save Google user locally
-      // --------------------------------
-
-      const users =
-        JSON.parse(
-          localStorage.getItem("dreamhouse_users") || "[]"
-        );
+      const users = JSON.parse(
+        localStorage.getItem("dreamhouse_users") || "[]"
+      );
 
       const existingUserIndex = users.findIndex(
         (item) =>
@@ -147,10 +143,6 @@ export default function Login() {
         JSON.stringify(users)
       );
 
-      // --------------------------------
-      // Save current logged-in user
-      // --------------------------------
-
       localStorage.setItem(
         "dreamhouse_name",
         user.displayName || "Google User"
@@ -161,16 +153,8 @@ export default function Login() {
         user.email || ""
       );
 
-      localStorage.setItem(
-        "dreamhouse_role",
-        "User"
-      );
-
-      localStorage.setItem(
-        "dreamhouse_logged_in",
-        "true"
-      );
-
+      localStorage.setItem("dreamhouse_role", "User");
+      localStorage.setItem("dreamhouse_logged_in", "true");
       localStorage.setItem(
         "dreamhouse_auth_provider",
         "Google"
@@ -183,7 +167,6 @@ export default function Login() {
         );
       }
 
-      // Firebase ID token
       const token = await user.getIdToken();
 
       localStorage.setItem(
@@ -191,7 +174,6 @@ export default function Login() {
         token
       );
 
-      // Go to dashboard
       navigate("/dashboard");
     } catch (err) {
       console.error("Google login error:", err);
@@ -222,276 +204,506 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f5ed] text-[#173d32]">
-      <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="min-h-screen bg-[#f6f5ef] text-[#173d32]">
 
-        {/* =========================================
-            LEFT IMAGE
-        ========================================= */}
-        <div className="relative hidden min-h-screen overflow-hidden lg:block">
+      <div className="grid min-h-screen lg:grid-cols-[1.08fr_0.92fr]">
+
+        {/* =====================================================
+            LEFT IMAGE SECTION
+        ====================================================== */}
+        <section className="relative hidden min-h-screen overflow-hidden bg-[#173d32] lg:flex">
+
+          {/* Your Image */}
           <img
-            src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=90"
-            alt="Modern house"
+            src={loginFloorplan}
+            alt="Dream House Floor Plan"
             className="absolute inset-0 h-full w-full object-cover"
           />
 
-          <div className="absolute inset-0 bg-[#173d32]/35" />
+          {/* Elegant Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#173d32]/80 via-[#173d32]/35 to-black/35" />
 
-          <div className="absolute bottom-10 left-10 right-10 text-white">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em]">
-              DreamHouse Planner
-            </p>
+          {/* Soft Glow */}
+          <div className="absolute -left-20 top-1/3 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
 
-            <h1 className="max-w-xl font-serif text-4xl leading-tight xl:text-5xl">
-              Design the home
-              <br />
-              you dream about.
-            </h1>
 
-            <p className="mt-5 max-w-lg text-sm leading-6 text-white/85">
-              Create your floor plan, customize every room,
-              and visualize your dream home in 3D.
-            </p>
+          {/* Logo */}
+          <div className="absolute left-10 top-9 z-20 flex items-center gap-3 text-white">
+
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/20 bg-white/15 shadow-lg backdrop-blur-md">
+
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 11.5 12 4l9 7.5" />
+                <path d="M5.5 10.5V20h13v-9.5" />
+                <path d="M9.5 20v-5h5v5" />
+              </svg>
+
+            </div>
+
+            <div>
+              <p className="font-serif text-lg font-semibold">
+                DreamHouse
+              </p>
+
+              <p className="text-[9px] uppercase tracking-[0.28em] text-white/65">
+                Planner
+              </p>
+            </div>
+
           </div>
-        </div>
 
-        {/* =========================================
+
+          {/* Main Content */}
+          <div className="relative z-10 flex min-h-screen w-full items-center px-12 xl:px-16">
+
+            <div className="max-w-[520px] text-white">
+
+              {/* Badge */}
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-lg">
+
+                <span className="h-1.5 w-1.5 rounded-full bg-[#dce9dc]" />
+
+                <span className="text-[9px] font-semibold uppercase tracking-[0.25em] text-white/90">
+                  Dream Home Planner
+                </span>
+
+              </div>
+
+
+              {/* Heading */}
+              <h1 className="font-serif text-[44px] leading-[1.06] sm:text-[50px] xl:text-[60px]">
+
+                Build the plan
+                <br />
+
+                <span className="text-[#dce9dc]">
+                  behind your dream.
+                </span>
+
+              </h1>
+
+
+              {/* Description */}
+              <p className="mt-6 max-w-[440px] text-[13px] leading-7 text-white/75">
+                Create your floor plan, organize every room,
+                explore your home in 3D, and turn your ideas
+                into a beautiful living space.
+              </p>
+
+
+              {/* Feature Cards */}
+              <div className="mt-8 grid max-w-[450px] grid-cols-3 gap-2.5">
+
+                <div className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3.5 backdrop-blur-md">
+
+                  <div className="mb-2 text-lg">
+                    ⌂
+                  </div>
+
+                  <p className="text-[10px] font-semibold">
+                    2D Plans
+                  </p>
+
+                  <p className="mt-1 text-[8px] text-white/55">
+                    Create layouts
+                  </p>
+
+                </div>
+
+
+                <div className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3.5 backdrop-blur-md">
+
+                  <div className="mb-2 text-lg">
+                    ◇
+                  </div>
+
+                  <p className="text-[10px] font-semibold">
+                    3D View
+                  </p>
+
+                  <p className="mt-1 text-[8px] text-white/55">
+                    See your space
+                  </p>
+
+                </div>
+
+
+                <div className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3.5 backdrop-blur-md">
+
+                  <div className="mb-2 text-lg">
+                    ✦
+                  </div>
+
+                  <p className="text-[10px] font-semibold">
+                    AI Planner
+                  </p>
+
+                  <p className="mt-1 text-[8px] text-white/55">
+                    Smart ideas
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          {/* Bottom */}
+          <div className="absolute bottom-8 left-10 z-20">
+
+            <p className="text-[9px] uppercase tracking-[0.3em] text-white/45">
+              Imagine • Plan • Create
+            </p>
+
+          </div>
+
+        </section>
+
+
+        {/* =====================================================
             RIGHT LOGIN
-        ========================================= */}
-        <div className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
-          <div className="w-full max-w-[400px]">
+        ====================================================== */}
+        <section className="flex min-h-screen items-center justify-center px-5 py-8 sm:px-10 lg:px-12 xl:px-16">
 
-            {/* Logo */}
+          <div className="w-full max-w-[430px]">
+
+            {/* Mobile Logo */}
             <Link
               to="/"
-              className="mb-8 flex items-center gap-3"
+              className="mb-7 flex items-center gap-3 lg:hidden"
             >
+
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#173d32] text-white">
+
                 <svg
-                  width="21"
-                  height="21"
+                  width="20"
+                  height="20"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
                   <path d="M3 11.5 12 4l9 7.5" />
                   <path d="M5.5 10.5V20h13v-9.5" />
                   <path d="M9.5 20v-5h5v5" />
                 </svg>
+
               </div>
 
               <div>
+
                 <div className="font-serif text-lg font-semibold">
                   DreamHouse
                 </div>
 
-                <div className="text-[10px] uppercase tracking-[0.2em] text-[#6b7d74]">
+                <div className="text-[9px] uppercase tracking-[0.2em] text-[#6b7d74]">
                   Planner
                 </div>
+
               </div>
+
             </Link>
 
-            {/* Heading */}
-            <div className="mb-7">
-              <h2 className="font-serif text-4xl leading-tight">
-                Welcome back
-              </h2>
 
-              <p className="mt-2 text-sm text-[#718079]">
-                Sign in to continue designing your dream home.
-              </p>
-            </div>
+            {/* Card */}
+            <div className="rounded-[28px] border border-[#e0e4dc] bg-white p-6 shadow-[0_25px_70px_rgba(23,61,50,0.09)] sm:p-8">
 
-            {/* Error */}
-            {error && (
-              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
+              {/* Header */}
+              <div className="mb-6">
 
-            {/* =========================================
-                GOOGLE BUTTON
-            ========================================= */}
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={googleLoading || loading}
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#d8ddd7] bg-white px-5 py-3.5 text-sm font-medium text-[#173d32] transition hover:border-[#173d32] hover:bg-[#fafbf8] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {googleLoading ? (
-                <>
-                  <svg
-                    className="h-5 w-5 animate-spin"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="9"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      opacity="0.25"
-                    />
+                <div className="mb-3 flex items-center gap-2">
 
-                    <path
-                      d="M21 12a9 9 0 0 1-9 9"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                  </svg>
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#173d32]" />
 
-                  Connecting to Google...
-                </>
-              ) : (
-                <>
-                  {/* Google G */}
-                  <span className="flex h-5 w-5 items-center justify-center text-[17px] font-bold">
-                    <span className="bg-gradient-to-r from-[#4285F4] via-[#34A853] to-[#EA4335] bg-clip-text text-transparent">
-                      G
-                    </span>
+                  <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#77847d]">
+                    Welcome back
                   </span>
 
-                  Continue with Google
-                </>
-              )}
-            </button>
-
-            {/* Divider */}
-            <div className="my-7 flex items-center gap-4">
-              <div className="h-px flex-1 bg-[#dfe3dd]" />
-
-              <span className="text-[11px] uppercase tracking-[0.15em] text-[#89958f]">
-                or continue with email
-              </span>
-
-              <div className="h-px flex-1 bg-[#dfe3dd]" />
-            </div>
-
-            {/* =========================================
-                EMAIL LOGIN
-            ========================================= */}
-            <form
-              onSubmit={handleLogin}
-              className="space-y-5"
-            >
-              {/* Email */}
-              <div>
-                <label
-                  htmlFor="email"
-                  className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[#53645d]"
-                >
-                  Email address
-                </label>
-
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  className="w-full rounded-xl border border-[#d8ddd7] bg-white px-4 py-3.5 text-sm text-[#173d32] outline-none transition placeholder:text-[#a0aaa5] focus:border-[#173d32] focus:ring-2 focus:ring-[#173d32]/10"
-                />
-              </div>
-
-              {/* Password */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label
-                    htmlFor="password"
-                    className="block text-xs font-semibold uppercase tracking-[0.12em] text-[#53645d]"
-                  >
-                    Password
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      alert(
-                        "Password reset will be connected later."
-                      )
-                    }
-                    className="text-xs font-medium text-[#0b5d46] hover:underline"
-                  >
-                    Forgot password?
-                  </button>
                 </div>
 
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) =>
-                    setPassword(e.target.value)
-                  }
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  className="w-full rounded-xl border border-[#d8ddd7] bg-white px-4 py-3.5 text-sm text-[#173d32] outline-none transition placeholder:text-[#a0aaa5] focus:border-[#173d32] focus:ring-2 focus:ring-[#173d32]/10"
-                />
+                <h2 className="font-serif text-[31px] leading-tight text-[#173d32]">
+                  Sign in to continue
+                </h2>
+
+                <p className="mt-2 text-[13px] leading-6 text-[#78847f]">
+                  Continue designing your dream home.
+                </p>
+
               </div>
 
-              {/* Remember */}
-              <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#65746e]">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) =>
-                    setRemember(e.target.checked)
-                  }
-                  className="h-4 w-4 rounded border-[#cbd3cd] accent-[#173d32]"
-                />
 
-                Remember me
-              </label>
+              {/* Error */}
+              {error && (
+                <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs leading-5 text-red-700">
+                  {error}
+                </div>
+              )}
 
-              {/* Login */}
+
+              {/* Google */}
               <button
-                type="submit"
-                disabled={loading || googleLoading}
-                className="w-full rounded-xl bg-[#173d32] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#0b5d46] disabled:cursor-not-allowed disabled:opacity-60"
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={googleLoading || loading}
+                className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#d9ded8] bg-white px-5 py-3.5 text-[13px] font-semibold text-[#173d32] transition-all duration-200 hover:border-[#173d32] hover:bg-[#fafbf8] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading
-                  ? "Signing in..."
-                  : "Sign in"}
-              </button>
-            </form>
 
-            {/* Signup */}
-            <div className="mt-7 rounded-2xl border border-[#dce1da] bg-white/70 px-5 py-4 text-center">
-              <p className="text-sm text-[#718079]">
-                Don't have an account?{" "}
-                <Link
-                  to="/signup"
-                  className="font-semibold text-[#0b5d46] hover:underline"
+                {googleLoading ? (
+                  <>
+                    <svg
+                      className="h-5 w-5 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="9"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        opacity="0.25"
+                      />
+
+                      <path
+                        d="M21 12a9 9 0 0 1-9 9"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                    </svg>
+
+                    Connecting to Google...
+                  </>
+                ) : (
+                  <>
+                    <span className="flex h-5 w-5 items-center justify-center text-[17px] font-bold">
+                      <span className="bg-gradient-to-r from-[#4285F4] via-[#34A853] to-[#EA4335] bg-clip-text text-transparent">
+                        G
+                      </span>
+                    </span>
+
+                    Continue with Google
+                  </>
+                )}
+
+              </button>
+
+
+              {/* Divider */}
+              <div className="my-6 flex items-center gap-4">
+
+                <div className="h-px flex-1 bg-[#e1e4df]" />
+
+                <span className="text-[9px] uppercase tracking-[0.16em] text-[#929c96]">
+                  or continue with email
+                </span>
+
+                <div className="h-px flex-1 bg-[#e1e4df]" />
+
+              </div>
+
+
+              {/* Form */}
+              <form
+                onSubmit={handleLogin}
+                className="space-y-4"
+              >
+
+                {/* Email */}
+                <div>
+
+                  <label
+                    htmlFor="email"
+                    className="mb-2 block text-[9px] font-bold uppercase tracking-[0.14em] text-[#53645d]"
+                  >
+                    Email address
+                  </label>
+
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) =>
+                      setEmail(e.target.value)
+                    }
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    className="w-full rounded-xl border border-[#d8ddd7] bg-[#fcfcfa] px-4 py-3.5 text-[13px] text-[#173d32] outline-none transition-all placeholder:text-[#a4ada8] focus:border-[#173d32] focus:bg-white focus:ring-4 focus:ring-[#173d32]/5"
+                  />
+
+                </div>
+
+
+                {/* Password */}
+                <div>
+
+                  <div className="mb-2 flex items-center justify-between">
+
+                    <label
+                      htmlFor="password"
+                      className="block text-[9px] font-bold uppercase tracking-[0.14em] text-[#53645d]"
+                    >
+                      Password
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        alert(
+                          "Password reset will be connected later."
+                        )
+                      }
+                      className="text-[10px] font-semibold text-[#0b5d46] hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+
+                  </div>
+
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) =>
+                      setPassword(e.target.value)
+                    }
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    className="w-full rounded-xl border border-[#d8ddd7] bg-[#fcfcfa] px-4 py-3.5 text-[13px] text-[#173d32] outline-none transition-all placeholder:text-[#a4ada8] focus:border-[#173d32] focus:bg-white focus:ring-4 focus:ring-[#173d32]/5"
+                  />
+
+                </div>
+
+
+                {/* Remember */}
+                <label className="flex cursor-pointer items-center gap-2 text-[11px] text-[#697771]">
+
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(e) =>
+                      setRemember(e.target.checked)
+                    }
+                    className="h-4 w-4 rounded border-[#cbd3cd] accent-[#173d32]"
+                  />
+
+                  Remember me
+
+                </label>
+
+
+                {/* Login */}
+                <button
+                  type="submit"
+                  disabled={loading || googleLoading}
+                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#173d32] px-5 py-3.5 text-[13px] font-semibold text-white shadow-[0_8px_20px_rgba(23,61,50,0.16)] transition-all duration-200 hover:bg-[#0d5946] hover:shadow-[0_12px_25px_rgba(23,61,50,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Create account
-                </Link>
-              </p>
+
+                  {loading ? (
+                    <>
+                      <svg
+                        className="h-4 w-4 animate-spin"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="8"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          opacity="0.3"
+                        />
+
+                        <path
+                          d="M20 12a8 8 0 0 1-8 8"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                      </svg>
+
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign in
+
+                      <span className="transition-transform group-hover:translate-x-1">
+                        →
+                      </span>
+                    </>
+                  )}
+
+                </button>
+
+              </form>
+
+
+              {/* Signup */}
+              <div className="mt-6 rounded-2xl border border-[#e0e4dd] bg-[#f8f9f5] px-4 py-3.5 text-center">
+
+                <p className="text-[11px] text-[#718079]">
+
+                  Don't have an account?{" "}
+
+                  <Link
+                    to="/signup"
+                    className="font-bold text-[#0b5d46] hover:underline"
+                  >
+                    Create account
+                  </Link>
+
+                </p>
+
+              </div>
+
             </div>
 
+
             {/* Footer */}
-            <p className="mt-7 text-center text-[11px] leading-5 text-[#8a958f]">
+            <p className="mt-5 text-center text-[9px] leading-5 text-[#929b96]">
+
               By continuing, you agree to our{" "}
+
               <button
                 type="button"
                 className="underline hover:text-[#173d32]"
               >
                 Terms
-              </button>{" "}
-              and{" "}
+              </button>
+
+              {" "}and{" "}
+
               <button
                 type="button"
                 className="underline hover:text-[#173d32]"
               >
                 Privacy Policy
               </button>
+
               .
+
             </p>
+
           </div>
-        </div>
+
+        </section>
+
       </div>
+
     </div>
   );
 }
