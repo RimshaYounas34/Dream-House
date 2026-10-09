@@ -4,7 +4,7 @@ import ScrollToTop from "./components/common/ScrollToTop";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import AdminRoute from "./components/common/AdminRoute";
 
-// Public
+// Public Pages
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -13,7 +13,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Contact from "./pages/Contact";
 
-// User
+// User Pages
 import Dashboard from "./pages/Dashboard";
 import CreateProject from "./pages/CreateProject";
 import AIPlanner from "./pages/AIPlanner";
@@ -27,7 +27,7 @@ import DesignMethod from "./pages/DesignMethod";
 import FeaturesPage from "./pages/Features";
 import HowItWorks from "./pages/HowItWorks";
 
-// Admin
+// Admin Pages
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminProjects from "./pages/AdminProjects";
 import Users from "./pages/Users";
@@ -42,31 +42,14 @@ function App() {
       <ScrollToTop />
 
       <Routes>
-
         {/* =========================
-            PUBLIC
+            PUBLIC ROUTES
         ========================== */}
 
-        {/* Home is accessible without login */}
         <Route path="/" element={<Home />} />
-
-        {/* Login */}
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-
-        {/* Signup */}
-        <Route
-          path="/signup"
-          element={<Signup />}
-        />
-
-        {/* Admin Login */}
-        <Route
-          path="/admin-login"
-          element={<AdminLogin />}
-        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
 
         {/* Password Reset */}
         <Route
@@ -79,17 +62,13 @@ function App() {
           element={<ResetPassword />}
         />
 
-
         {/* =========================
-            USER - LOGIN REQUIRED
+            PROTECTED USER ROUTES
+            Login required
         ========================== */}
 
         <Route element={<ProtectedRoute />}>
-
-          <Route
-            path="/dashboard"
-            element={<Dashboard />}
-          />
+          <Route path="/dashboard" element={<Dashboard />} />
 
           <Route
             path="/create-project"
@@ -146,21 +125,18 @@ function App() {
             element={<HowItWorks />}
           />
 
-          {/* Contact is also protected */}
           <Route
             path="/contact"
             element={<Contact />}
           />
-
         </Route>
 
-
         {/* =========================
-            ADMIN - ADMIN REQUIRED
+            PROTECTED ADMIN ROUTES
+            Admin login + admin role
         ========================== */}
 
         <Route element={<AdminRoute />}>
-
           <Route
             path="/admin"
             element={<AdminDashboard />}
@@ -195,9 +171,7 @@ function App() {
             path="/admin/settings"
             element={<AdminSettings />}
           />
-
         </Route>
-
       </Routes>
     </BrowserRouter>
   );

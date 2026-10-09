@@ -20,7 +20,6 @@ export default function Header() {
 
   return (
     <header className="relative z-[100] w-full border-b border-[#e8eeeb] bg-white">
-
       <div className="mx-auto flex h-[86px] w-full max-w-[1550px] items-center justify-between px-6 sm:px-10 lg:px-14 xl:px-20">
 
         {/* =====================================================
@@ -32,31 +31,25 @@ export default function Header() {
           className="group flex shrink-0 items-center gap-3.5"
         >
           <div className="flex h-[50px] w-[50px] items-center justify-center rounded-[14px] bg-[#eef7f3] transition-all duration-300 group-hover:bg-[#08724f]">
-
             <Home
               size={27}
               strokeWidth={1.8}
               className="text-[#08724f] transition-colors duration-300 group-hover:text-white"
             />
-
           </div>
 
           <div className="leading-none">
-
             <p className="text-[21px] font-bold tracking-[-0.04em] text-[#17342c]">
               Dream House
             </p>
 
             <div className="mt-1.5 flex items-center gap-2">
-
               <span className="h-px w-5 bg-[#08724f]" />
 
               <p className="text-[8px] font-bold uppercase tracking-[0.45em] text-[#78877f]">
                 Planner
               </p>
-
             </div>
-
           </div>
         </Link>
 
@@ -143,7 +136,6 @@ export default function Header() {
               <span className="absolute bottom-0 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-[#08724f]" />
             )}
           </Link>
-
         </nav>
 
         {/* =====================================================
@@ -166,41 +158,23 @@ export default function Header() {
           <Link
             to="/signup"
             className="group flex h-[46px] items-center gap-2 rounded-[11px] bg-[#08724f] px-5 shadow-[0_7px_20px_rgba(8,114,79,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#065d40]"
-            style={{
-              backgroundColor: "#08724f",
-            }}
           >
-
             <Sparkles
               size={15}
               strokeWidth={2}
-              style={{
-                color: "#ffffff",
-              }}
+              className="text-white"
             />
 
-            <span
-              style={{
-                color: "#ffffff",
-                fontSize: "14px",
-                fontWeight: 700,
-                whiteSpace: "nowrap",
-              }}
-            >
+            <span className="whitespace-nowrap text-[14px] font-bold text-white">
               Sign Up
             </span>
 
             <ArrowRight
               size={14}
               strokeWidth={2}
-              style={{
-                color: "#ffffff",
-              }}
-              className="transition-transform duration-300 group-hover:translate-x-1"
+              className="text-white transition-transform duration-300 group-hover:translate-x-1"
             />
-
           </Link>
-
         </div>
 
         {/* =====================================================
@@ -214,9 +188,7 @@ export default function Header() {
         >
           <Menu size={21} />
         </button>
-
       </div>
-
     </header>
   );
 }
