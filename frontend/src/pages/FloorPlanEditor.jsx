@@ -463,6 +463,83 @@ function buildArchitecturalAIPlan(inputRooms) {
   return { rooms, doors, windows };
 }
 
+
+function buildDoubleStoreyFirstFloorPlan(baseRooms = []) {
+  const source = Array.isArray(baseRooms) ? baseRooms : [];
+  const roomByType = (type, index = 0) => source.filter((r) => normalizeRoomType(r.type) === type)[index];
+  const pickName = (type, fallback) => roomByType(type)?.name || fallback;
+  const rooms = [];
+
+  const add = (type, name, x, y, width, height, extra = {}) => {
+    rooms.push({
+      id: `first-${type}-${rooms.length + 1}`,
+      type,
+      name,
+      x,
+      y,
+      width,
+      height,
+      rotation: 0,
+      ...extra,
+    });
+  };
+
+  // FIRST FLOOR — private family zone with stairs, bedrooms and balconies.
+  add("stairs", "Staircase", 55, 55, 100, 105);
+  add("living", "Family Lounge", 165, 55, 215, 105);
+  add("bedroom", "Master Bedroom", 390, 55, 235, 125, { floorMaterial: "light-wood" });
+  add("bathroom", "Master Attached Bath", 480, 190, 145, 72);
+  add("bedroom", pickName("bedroom", "Bedroom 3"), 55, 180, 185, 115);
+  add("bedroom", source.filter((r) => normalizeRoomType(r.type) === "bedroom")[2]?.name || "Bedroom 4", 250, 180, 190, 115);
+  add("bathroom", "Common Bath", 455, 280, 85, 75);
+  add("bathroom", "Attached Bath 2", 550, 280, 75, 75);
+  add("balcony", "Front Balcony", 55, 315, 210, 72);
+  add("balcony", "Open Terrace", 275, 315, 265, 72);
+  add("laundry", "Laundry", 555, 375, 70, 70);
+  add("store", "Store", 465, 375, 80, 70);
+
+  const clampRoom = (r) => ({
+    ...r,
+    x: Math.max(PLOT.left + 5, Math.min(r.x, PLOT.right - r.width - 5)),
+    y: Math.max(PLOT.top + 5, Math.min(r.y, PLOT.bottom - r.height - 5)),
+  });
+
+  const finalRooms = rooms.map(clampRoom);
+  const doors = [];
+  const windows = [];
+
+  finalRooms.forEach((r, index) => {
+    if (r.type !== "balcony" && r.type !== "terrace") {
+      doors.push({
+        id: `first-door-${index + 1}`,
+        name: `${r.name} Door`,
+        x: Math.round(r.x + Math.min(r.width / 2 - 21, Math.max(20, r.width / 2 - 21))),
+        y: Math.max(PLOT.top, r.y - 3),
+        width: 42,
+        height: 10,
+        rotation: 0,
+      });
+    }
+
+    const exteriorTop = r.y <= PLOT.top + 8;
+    const exteriorLeft = r.x <= PLOT.left + 8;
+    const exteriorRight = r.x + r.width >= PLOT.right - 8;
+    const exteriorBottom = r.y + r.height >= PLOT.bottom - 8;
+
+    if (exteriorTop || (!exteriorLeft && !exteriorRight && !exteriorBottom && r.y < 190)) {
+      windows.push({ id: `first-window-${index}-top`, name: `${r.name} Window`, x: r.x + r.width / 2 - 25, y: r.y - 3, width: 50, height: 7, rotation: 0 });
+    } else if (exteriorLeft) {
+      windows.push({ id: `first-window-${index}-left`, name: `${r.name} Window`, x: r.x - 3, y: r.y + r.height / 2 - 23, width: 7, height: 46, rotation: 0 });
+    } else if (exteriorRight) {
+      windows.push({ id: `first-window-${index}-right`, name: `${r.name} Window`, x: r.x + r.width - 4, y: r.y + r.height / 2 - 23, width: 7, height: 46, rotation: 0 });
+    } else if (exteriorBottom) {
+      windows.push({ id: `first-window-${index}-bottom`, name: `${r.name} Window`, x: r.x + r.width / 2 - 25, y: r.y + r.height - 4, width: 50, height: 7, rotation: 0 });
+    }
+  });
+
+  return { rooms: finalRooms, doors, windows, walls: [], furniture: [] };
+}
+
 export default function FloorPlanEditor() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -476,7 +553,8 @@ export default function FloorPlanEditor() {
     name: location.state?.project?.name || location.state?.projectName || "Dream House",
     plotWidth: location.state?.plotWidth || location.state?.project?.plotWidth || 30,
     plotLength: location.state?.plotLength || location.state?.project?.plotLength || 60,
-    floors: location.state?.floors || location.state?.project?.floors || 1,
+    // This editor is configured for a real double-storey house.
+    floors: Math.max(1, Number(location.state?.floors || location.state?.project?.floors || 2)),
   }));
   const [backendProjectId, setBackendProjectId] = useState(location.state?.projectId || null);
   const [designSettings, setDesignSettings] = useState(() => ({
@@ -508,6 +586,64 @@ export default function FloorPlanEditor() {
   const [walls, setWalls] = useState(INITIAL_WALLS);
   const [furniture, setFurniture] = useState([]);
 
+  // Multi-floor support: every selected building floor gets its own editable snapshot.
+  const [floorLevel, setFloorLevel] = useState("ground");
+  const [floorPlans, setFloorPlans] = useState({});
+
+  const floorKey = (level) => (level === 0 ? "ground" : level === 1 ? "first" : `floor-${level}`);
+  const floorLabel = (level) => (
+    level === 0 ? "Ground Floor" : level === 1 ? "First Floor" : `Floor ${level + 1}`
+  );
+
+  const makeFloorSnapshot = (level, ground) => {
+    if (level === 0) {
+      return {
+        rooms: rooms.map((item) => ({ ...item, floor: 0 })),
+        doors: doors.map((item) => ({ ...item, floor: 0 })),
+        windows: windows.map((item) => ({ ...item, floor: 0 })),
+        walls: walls.map((item) => ({ ...item, floor: 0 })),
+        furniture: furniture.map((item) => ({ ...item, floor: 0 })),
+      };
+    }
+
+    if (level === 1) {
+      return buildDoubleStoreyFirstFloorPlan(ground.rooms || []);
+    }
+
+    // Higher floors start from the ground footprint so they are immediately visible
+    // in both 2D and 3D, but remain independent once the user edits them.
+    return {
+      rooms: (ground.rooms || []).map((item, index) => ({ ...item, id: `${item.id || "room"}-f${level}-${index}`, floor: level })),
+      doors: (ground.doors || []).map((item, index) => ({ ...item, id: `${item.id || "door"}-f${level}-${index}`, floor: level })),
+      windows: (ground.windows || []).map((item, index) => ({ ...item, id: `${item.id || "window"}-f${level}-${index}`, floor: level })),
+      walls: (ground.walls || []).map((item, index) => ({ ...item, id: `${item.id || "wall"}-f${level}-${index}`, floor: level })),
+      furniture: (ground.furniture || []).map((item, index) => ({ ...item, id: `${item.id || "furniture"}-f${level}-${index}`, floor: level })),
+    };
+  };
+
+  useEffect(() => {
+    setFloorPlans((previous) => {
+      const count = Math.max(1, Number(project?.floors || 1));
+      const ground = previous.ground?.rooms?.length
+        ? previous.ground
+        : makeFloorSnapshot(0, {});
+
+      const next = { ...previous, ground };
+      for (let level = 1; level < count; level += 1) {
+        const key = floorKey(level);
+        if (!next[key]?.rooms?.length) next[key] = makeFloorSnapshot(level, ground);
+      }
+
+      // Remove snapshots above the newly selected floor count.
+      Object.keys(next).forEach((key) => {
+        const level = key === "ground" ? 0 : key === "first" ? 1 : Number(key.replace("floor-", ""));
+        if (Number.isFinite(level) && level >= count) delete next[key];
+      });
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.floors]);
+
   const [selected, setSelected] = useState(null);
   const [activeTool, setActiveTool] = useState("select");
   const [zoom, setZoom] = useState(1);
@@ -536,12 +672,35 @@ const [aiCommandMessage, setAiCommandMessage] = useState("");
     try {
       const data = JSON.parse(raw);
       queueMicrotask(() => {
-        if (data.project) setProject(data.project);
+        if (data.project) {
+          setProject({
+            ...data.project,
+            floors: Math.max(1, Number(data.project.floors || 1)),
+          });
+        }
         if (Array.isArray(data.rooms)) setRooms(data.rooms);
         if (Array.isArray(data.doors)) setDoors(data.doors);
         if (Array.isArray(data.windows)) setWindows(data.windows);
         if (Array.isArray(data.walls)) setWalls(data.walls);
         if (Array.isArray(data.furniture)) setFurniture(data.furniture);
+        if (data.floorPlans && typeof data.floorPlans === "object") {
+          setFloorPlans((previous) => {
+            const incoming = data.floorPlans;
+            const ground = incoming.ground || previous.ground || {
+              rooms: Array.isArray(data.rooms) ? data.rooms : INITIAL_ROOMS,
+              doors: Array.isArray(data.doors) ? data.doors : INITIAL_DOORS,
+              windows: Array.isArray(data.windows) ? data.windows : INITIAL_WINDOWS,
+              walls: Array.isArray(data.walls) ? data.walls : [],
+              furniture: Array.isArray(data.furniture) ? data.furniture : [],
+            };
+            return {
+              ...previous,
+              ...incoming,
+              ground,
+            };
+          });
+        }
+        if (data.floorLevel) setFloorLevel(data.floorLevel);
         setDesignSettings((current) => ({ ...current, ...data }));
       });
     } catch (e) { console.error("Could not load saved floor plan", e); }
@@ -551,12 +710,35 @@ const [aiCommandMessage, setAiCommandMessage] = useState("");
     if (!backendProjectId || !localStorage.getItem("dreamhouse_token")) return;
     getProject(backendProjectId).then((remote) => {
       const plan = remote.floorPlanData || {};
-      if (plan.project) setProject(plan.project);
+      if (plan.project) {
+        setProject({
+          ...plan.project,
+          floors: Math.max(1, Number(plan.project.floors || 1)),
+        });
+      }
       if (Array.isArray(plan.rooms)) setRooms(plan.rooms);
       if (Array.isArray(plan.doors)) setDoors(plan.doors);
       if (Array.isArray(plan.windows)) setWindows(plan.windows);
       if (Array.isArray(plan.walls)) setWalls(plan.walls);
       if (Array.isArray(plan.furniture)) setFurniture(plan.furniture);
+      if (plan.floorPlans && typeof plan.floorPlans === "object") {
+        setFloorPlans((previous) => {
+          const incoming = plan.floorPlans;
+          const ground = incoming.ground || previous.ground || {
+            rooms: Array.isArray(plan.rooms) ? plan.rooms : INITIAL_ROOMS,
+            doors: Array.isArray(plan.doors) ? plan.doors : INITIAL_DOORS,
+            windows: Array.isArray(plan.windows) ? plan.windows : INITIAL_WINDOWS,
+            walls: Array.isArray(plan.walls) ? plan.walls : [],
+            furniture: Array.isArray(plan.furniture) ? plan.furniture : [],
+          };
+          return {
+            ...previous,
+            ...incoming,
+            ground,
+          };
+        });
+      }
+      if (plan.floorLevel) setFloorLevel(plan.floorLevel);
       setDesignSettings({ site: plan.site || {}, exterior: plan.exterior || {}, interior: plan.interior || {}, materials: plan.materials || {}, lighting: plan.lighting || {}, roof: plan.roof || {}, floors: plan.floors || [] });
     }).catch((error) => setAiCommandMessage(`Could not load cloud project: ${error.message}`));
   }, [backendProjectId]);
@@ -798,6 +980,8 @@ const handleAICommand = async () => {
     const planForAI = {
       project: { ...project, plotWidth: PLOT.width, plotLength: PLOT.height, units: "pixels" },
       rooms, doors, windows, walls, furniture,
+      floorLevel,
+      floorCount: project?.floors || 1,
       ...designSettings,
       settings: {
         canvas: {
@@ -1311,9 +1495,65 @@ const handleAICommand = async () => {
   }, 250);
 };
 
+
+  const currentFloorSnapshot = () => ({
+    rooms: rooms.map((item) => ({ ...item })),
+    doors: doors.map((item) => ({ ...item })),
+    windows: windows.map((item) => ({ ...item })),
+    walls: walls.map((item) => ({ ...item })),
+    furniture: furniture.map((item) => ({ ...item })),
+  });
+
+  const switchFloor = (nextFloor) => {
+    if (nextFloor === floorLevel) return;
+
+    const currentSnapshot = currentFloorSnapshot();
+    const storedTarget = floorPlans[nextFloor];
+    const nextLevel = nextFloor === "ground" ? 0 : nextFloor === "first" ? 1 : Number(nextFloor.replace("floor-", ""));
+    const ground = floorPlans.ground || currentSnapshot;
+    const targetSnapshot = storedTarget?.rooms?.length
+      ? storedTarget
+      : makeFloorSnapshot(nextLevel, ground);
+
+    setFloorPlans((previous) => ({
+      ...previous,
+      [floorLevel]: currentSnapshot,
+      [nextFloor]: targetSnapshot,
+    }));
+
+    applySnapshot(targetSnapshot);
+    setFloorLevel(nextFloor);
+    setSelected(null);
+    setSaved(false);
+    setAiCommandMessage(`${floorLabel(nextLevel)} selected — this floor has its own editable 2D layout and will appear at the same level in 3D.`);
+  };
+
   const savePlan = async () => {
+    const nextFloorPlans = {
+      ...floorPlans,
+      [floorLevel]: currentFloorSnapshot(),
+    };
+
+    const selectedFloorCount = Math.max(1, Number(project?.floors || 1));
+    const ground = nextFloorPlans.ground || currentFloorSnapshot();
+    for (let level = 1; level < selectedFloorCount; level += 1) {
+      const key = floorKey(level);
+      if (!nextFloorPlans[key]?.rooms?.length) {
+        nextFloorPlans[key] = makeFloorSnapshot(level, ground);
+      }
+    }
+
+    setFloorPlans(nextFloorPlans);
+
     const floorPlanData = {
-      project, rooms, doors, windows, walls, furniture,
+      project,
+      rooms,
+      doors,
+      windows,
+      walls,
+      furniture,
+      floorLevel,
+      floorPlans: nextFloorPlans,
       ...designSettings,
       source: isAIPlan ? "ai-planner" : "manual",
       savedAt: new Date().toISOString()
@@ -1513,6 +1753,20 @@ const handleAICommand = async () => {
   };
 
   const go3D = () => {
+    const nextFloorPlans = {
+      ...floorPlans,
+      [floorLevel]: currentFloorSnapshot(),
+    };
+    const selectedFloorCount = Math.max(1, Number(project?.floors || 1));
+    const ground = nextFloorPlans.ground || currentFloorSnapshot();
+    for (let level = 1; level < selectedFloorCount; level += 1) {
+      const key = floorKey(level);
+      if (!nextFloorPlans[key]?.rooms?.length) {
+        nextFloorPlans[key] = makeFloorSnapshot(level, ground);
+      }
+    }
+    setFloorPlans(nextFloorPlans);
+
     const floorPlanData = {
       project,
       rooms,
@@ -1520,6 +1774,8 @@ const handleAICommand = async () => {
       windows,
       walls,
       furniture,
+      floorLevel,
+      floorPlans: nextFloorPlans,
       ...designSettings,
     };
 
@@ -1545,7 +1801,7 @@ const handleAICommand = async () => {
             <button type="button" onClick={() => navigate(isAIPlan ? "/ai-planner" : "/create-project")} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d9dfd7] bg-white text-[#315348] hover:bg-[#eef3ed]"><Icon name="back" size={18} /></button>
             <div>
               <p className="font-serif text-lg font-bold leading-none">{project?.name || "Dream House"}</p>
-              <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[#89948d]">2D Architectural Floor Plan • {isAIPlan ? "AI Generated" : "Manual"}</p>
+              <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[#89948d]">2D Architectural Floor Plan • {floorLabel(floorLevel === "ground" ? 0 : floorLevel === "first" ? 1 : Number(floorLevel.replace("floor-", "")))} • {isAIPlan ? "AI Generated" : "Manual"}</p>
             </div>
           </div>
           <div className={`hidden items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-semibold md:flex ${isAIPlan ? "border-[#d9e1d8] bg-[#eef3ed] text-[#315348]" : "border-[#d9e1d8] bg-white text-[#315348]"}`}>
@@ -1562,6 +1818,28 @@ const handleAICommand = async () => {
           </div>
         </div>
       </header>
+
+      {Number(project?.floors || 1) > 1 && (
+        <div className="border-b border-[#dfe4dc] bg-[#fbfaf5] px-5 py-3 lg:px-7">
+          <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#7d8982]">Multi-Storey House</p>
+              <p className="mt-1 text-[11px] text-[#65736b]">{project.floors} floors selected — har floor ka apna 2D layout hai aur 3D mein sab floors stack honge.</p>
+            </div>
+            <div className="flex max-w-full flex-wrap rounded-2xl border border-[#d5ddd4] bg-white p-1 shadow-sm">
+              {Array.from({ length: Math.max(1, Number(project?.floors || 1)) }, (_, level) => {
+                const key = floorKey(level);
+                const icon = level === 0 ? "🏠" : level === 1 ? "🛏️" : "🏢";
+                return (
+                  <button key={key} type="button" onClick={() => switchFloor(key)} className={`rounded-xl px-4 py-2.5 text-[11px] font-bold transition ${floorLevel === key ? "bg-[#0b5d46] text-white" : "text-[#53645b] hover:bg-[#eef3ed]"}`}>
+                    {icon} {floorLabel(level)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid min-h-[calc(100vh-72px)] lg:grid-cols-[238px_minmax(0,1fr)_300px]">
         <aside className="border-r border-[#dfe4dc] bg-[#fbfaf5] p-3">
@@ -1595,7 +1873,7 @@ const handleAICommand = async () => {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#728078]">Architectural Layout</p>
-              <h1 className="mt-1 font-serif text-2xl font-bold">{isAIPlan ? "AI Generated House Plan" : "Arrange your spaces"}</h1>
+              <h1 className="mt-1 font-serif text-2xl font-bold">{floorLevel === "ground" ? (isAIPlan ? "Ground Floor — AI Architectural Plan" : "Ground Floor — House Plan") : `${floorLabel(floorLevel === "first" ? 1 : Number(floorLevel.replace("floor-", "")))} — House Plan`}</h1>
             </div>
             <div className={`rounded-full border px-3 py-2 text-[10px] font-semibold ${isAIPlan ? "border-[#d9e1d8] bg-[#eef3ed] text-[#53645b]" : "border-[#d5ddd4] bg-white text-[#607269]"}`}>
               {isAIPlan ? "AI plan editable • Drag = move • Inspector = resize / rotate" : "Drag = move • Shift = fine movement"}
@@ -1644,8 +1922,8 @@ const handleAICommand = async () => {
 
                 {isAIPlan && (
                   <>
-                    <text x="48" y="575" fontSize="7" fontWeight="700" fill="#748078">ARCHITECTURAL 2D PLAN</text>
-                    <text x="650" y="575" textAnchor="end" fontSize="7" fontWeight="700" fill="#748078">AI GENERATED • NOT TO CONSTRUCTION SCALE</text>
+                    <text x="48" y="575" fontSize="7" fontWeight="700" fill="#748078">ARCHITECTURAL 2D PLAN • {floorLabel(floorLevel === "ground" ? 0 : floorLevel === "first" ? 1 : Number(floorLevel.replace("floor-", ""))).toUpperCase()}</text>
+                    <text x="650" y="575" textAnchor="end" fontSize="7" fontWeight="700" fill="#748078">AI GENERATED • CONCEPT PLAN</text>
                   </>
                 )}
 
@@ -1810,7 +2088,7 @@ const handleAICommand = async () => {
               <span>Walls: <b className="text-[#315348]">{walls.length}</b></span>
               <span>Furniture: <b className="text-[#315348]">{furniture.length}</b></span>
             </div>
-            <span>{isAIPlan ? "AI plan editable. Use the command box below to change the existing layout." : "Rooms, doors aur windows ko direct drag karke plot mein set karo."}</span>
+            <span>{floorLevel === "ground" ? (isAIPlan ? "Ground Floor AI plan editable. Ye baqi floors se separate layout hai." : "Ground Floor ka separate layout edit karo.") : `${floorLabel(floorLevel === "first" ? 1 : Number(floorLevel.replace("floor-", "")))} ka separate layout edit ho raha hai.`}</span>
           </div>
         </main>
 
@@ -1829,7 +2107,20 @@ const handleAICommand = async () => {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#708078]">Plan Summary</p>
                 <div className="mt-4 space-y-3 text-[11px]">
                   <div className="flex justify-between"><span className="text-[#7b8780]">Plot</span><b>{project.plotWidth} × {project.plotLength} ft</b></div>
-                  <div className="flex justify-between"><span className="text-[#7b8780]">Floors</span><b>{project.floors}</b></div>
+                  <div className="flex justify-between"><span className="text-[#7b8780]">Floors</span><b>{project.floors} • {floorLabel(floorLevel === "ground" ? 0 : floorLevel === "first" ? 1 : Number(floorLevel.replace("floor-", "")))}</b></div>
+                  <div className="mt-3 border-t border-[#dce4dc] pt-3">
+                    <label className="text-[10px] font-semibold text-[#7b8780]">Building Floors</label>
+                    <select value={Math.max(1, Number(project.floors || 1))} onChange={(e) => {
+                      const floors = Math.max(1, Number(e.target.value));
+                      setProject((current) => ({ ...current, floors }));
+                      setSaved(false);
+                    }} className="mt-1 w-full rounded-xl border border-[#d5ddd4] bg-white px-3 py-2 text-[11px] text-[#173d32] outline-none">
+                      {Array.from({ length: 10 }, (_, index) => {
+                        const count = index + 1;
+                        return <option key={count} value={count}>{count} Floor{count > 1 ? "s" : ""}</option>;
+                      })}
+                    </select>
+                  </div>
                   <div className="flex justify-between"><span className="text-[#7b8780]">Rooms</span><b>{rooms.length}</b></div>
                   <div className="flex justify-between"><span className="text-[#7b8780]">Doors</span><b>{doors.length}</b></div>
                   <div className="flex justify-between"><span className="text-[#7b8780]">Windows</span><b>{windows.length}</b></div>

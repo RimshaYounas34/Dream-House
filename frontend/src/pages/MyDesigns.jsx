@@ -750,7 +750,7 @@ function ProjectCard({
               <button
                 type="button"
                 onClick={() => onEdit(design)}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#0b5d46] px-5 py-3 text-[10px] font-bold text-white shadow-sm transition hover:bg-[#084936] hover:shadow-md"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#0b5d46] px-5 py-3 text-[10px] font-bold !text-white shadow-sm transition hover:bg-[#084936] hover:shadow-md"
               >
                 <Pencil size={13} />
                 Edit Design
@@ -878,7 +878,7 @@ function ProjectCard({
           <button
             type="button"
             onClick={() => onEdit(design)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0b5d46] px-3 py-3 text-[10px] font-bold text-white shadow-sm transition hover:bg-[#084936] hover:shadow-md"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0b5d46] px-3 py-3 text-[10px] font-bold !text-white shadow-sm transition hover:bg-[#084936] hover:shadow-md"
           >
             <Pencil size={13} />
             Edit Design
@@ -1337,7 +1337,7 @@ export default function MyDesigns() {
 
             <Link
               to="/floor-plan-editor"
-              className="group inline-flex h-10 items-center gap-2 rounded-xl bg-[#0b5d46] px-4 text-[10px] font-bold text-white shadow-[0_7px_20px_rgba(11,93,70,0.2)] transition hover:bg-[#084936] hover:shadow-[0_10px_25px_rgba(11,93,70,0.25)] sm:px-5"
+              className="group inline-flex h-10 items-center gap-2 rounded-xl bg-[#0b5d46] px-4 text-[10px] font-bold !text-white shadow-[0_7px_20px_rgba(11,93,70,0.2)] transition hover:bg-[#084936] hover:shadow-[0_10px_25px_rgba(11,93,70,0.25)] sm:px-5"
             >
               <Plus
                 size={15}
@@ -1592,7 +1592,7 @@ export default function MyDesigns() {
                   }
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 text-[9px] font-bold transition sm:flex-none ${
                     viewMode === "grid"
-                      ? "bg-[#0b5d46] text-white shadow-sm"
+                      ? "bg-[#0b5d46] !text-white shadow-sm"
                       : "text-[#7f8b84] hover:bg-[#f2f5f1] hover:text-[#315348]"
                   }`}
                 >
@@ -1609,7 +1609,7 @@ export default function MyDesigns() {
                   }
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 text-[9px] font-bold transition sm:flex-none ${
                     viewMode === "list"
-                      ? "bg-[#0b5d46] text-white shadow-sm"
+                      ? "bg-[#0b5d46] !text-white shadow-sm"
                       : "text-[#7f8b84] hover:bg-[#f2f5f1] hover:text-[#315348]"
                   }`}
                 >
@@ -1686,7 +1686,7 @@ export default function MyDesigns() {
                   onClick={() =>
                     setSearch("")
                   }
-                  className="mt-6 rounded-xl bg-[#0b5d46] px-5 py-3 text-[10px] font-bold text-white shadow-md transition hover:bg-[#084936]"
+                  className="mt-6 rounded-xl bg-[#0b5d46] px-5 py-3 text-[10px] font-bold !text-white shadow-md transition hover:bg-[#084936]"
                 >
                   Clear Search
                 </button>
@@ -1726,7 +1726,7 @@ export default function MyDesigns() {
 
                   <Link
                     to="/floor-plan-editor"
-                    className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#0b5d46] px-6 py-3.5 text-[10px] font-bold text-white shadow-[0_8px_22px_rgba(11,93,70,0.2)] transition hover:-translate-y-0.5 hover:bg-[#084936] hover:shadow-lg"
+                    className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#0b5d46] px-6 py-3.5 text-[10px] font-bold !text-white shadow-[0_8px_22px_rgba(11,93,70,0.2)] transition hover:-translate-y-0.5 hover:bg-[#084936] hover:shadow-lg"
                   >
                     <Plus size={15} />
                     Create Your First Design
@@ -1788,7 +1788,7 @@ export default function MyDesigns() {
 
               <Link
                 to="/floor-plan-editor"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0b5d46] px-4 py-2.5 text-[9px] font-bold text-white transition hover:bg-[#084936]"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0b5d46] px-4 py-2.5 text-[9px] font-bold !text-white transition hover:bg-[#084936]"
               >
                 <Plus size={12} />
                 Add New Design
@@ -1824,7 +1824,7 @@ export default function MyDesigns() {
 
           <Link
             to="/floor-plan-editor"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0b5d46] text-white shadow-[0_7px_20px_rgba(11,93,70,0.25)] transition hover:bg-[#084936]"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0b5d46] !text-white shadow-[0_7px_20px_rgba(11,93,70,0.25)] transition hover:bg-[#084936]"
           >
             <Plus size={20} />
           </Link>

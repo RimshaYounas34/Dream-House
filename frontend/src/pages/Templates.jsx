@@ -1,5 +1,19 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+// =========================================================
+// TEMPLATE IMAGES
+// =========================================================
+import modernVilla from "../assets/templates/modern-villa.jpeg";
+import familyHouse from "../assets/templates/family-house.jpg";
+import luxuryVilla from "../assets/templates/luxury-villa.jpg";
+import minimalHouse from "../assets/templates/minimal-house.jpg";
+import compactHome from "../assets/templates/compact-home.jpg";
+import doubleStoreyFamily from "../assets/templates/double-storey-family.png";
+
+// =========================================================
+// HOUSE TEMPLATES
+// =========================================================
 export const templates = [
   {
     id: 1,
@@ -10,10 +24,10 @@ export const templates = [
     kitchens: 1,
     floors: 2,
     plot: "30 × 60 ft",
-    image:
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=90",
+    image: modernVilla,
     description:
       "A spacious modern family villa with open living spaces, bedrooms, parking and outdoor areas.",
+
     rooms: [
       {
         id: "tv1-living",
@@ -138,6 +152,9 @@ export const templates = [
     ],
   },
 
+  // =========================================================
+  // FAMILY HOUSE
+  // =========================================================
   {
     id: 2,
     name: "Family House",
@@ -147,10 +164,10 @@ export const templates = [
     kitchens: 1,
     floors: 1,
     plot: "25 × 50 ft",
-    image:
-      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1000&q=90",
+    image: familyHouse,
     description:
       "Comfortable single-storey family home with practical room placement and a spacious living area.",
+
     rooms: [
       {
         id: "fh-living",
@@ -245,6 +262,9 @@ export const templates = [
     ],
   },
 
+  // =========================================================
+  // LUXURY VILLA
+  // =========================================================
   {
     id: 3,
     name: "Luxury Villa",
@@ -254,10 +274,10 @@ export const templates = [
     kitchens: 2,
     floors: 2,
     plot: "40 × 60 ft",
-    image:
-      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1000&q=90",
+    image: luxuryVilla,
     description:
       "Large luxury villa concept with multiple bedrooms, bathrooms, kitchens, garage and entertainment spaces.",
+
     rooms: [
       {
         id: "lv-living",
@@ -382,6 +402,9 @@ export const templates = [
     ],
   },
 
+  // =========================================================
+  // MINIMAL HOUSE
+  // =========================================================
   {
     id: 4,
     name: "Minimal House",
@@ -391,10 +414,10 @@ export const templates = [
     kitchens: 1,
     floors: 1,
     plot: "30 × 50 ft",
-    image:
-      "https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=1000&q=90",
+    image: minimalHouse,
     description:
       "Clean and minimal home layout designed for comfortable everyday family living.",
+
     rooms: [
       {
         id: "mh-living",
@@ -479,6 +502,9 @@ export const templates = [
     ],
   },
 
+  // =========================================================
+  // COMPACT HOME
+  // =========================================================
   {
     id: 5,
     name: "Compact Home",
@@ -488,10 +514,10 @@ export const templates = [
     kitchens: 1,
     floors: 1,
     plot: "25 × 40 ft",
-    image:
-      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1000&q=90",
+    image: compactHome,
     description:
       "Smart compact layout for smaller plots with efficient use of every available space.",
+
     rooms: [
       {
         id: "ch-living",
@@ -566,6 +592,9 @@ export const templates = [
     ],
   },
 
+  // =========================================================
+  // DOUBLE STOREY FAMILY
+  // =========================================================
   {
     id: 6,
     name: "Double Storey Family",
@@ -575,10 +604,10 @@ export const templates = [
     kitchens: 1,
     floors: 2,
     plot: "30 × 60 ft",
-    image:
-      "https://images.unsplash.com/photo-1600566753051-f0b89df2dd90?auto=format&fit=crop&w=1000&q=90",
+    image: doubleStoreyFamily,
     description:
       "Double-storey family plan with balanced private and shared spaces for a growing family.",
+
     rooms: [
       {
         id: "ds-living",
@@ -694,6 +723,9 @@ export const templates = [
   },
 ];
 
+// =========================================================
+// CATEGORIES
+// =========================================================
 const categories = [
   "All",
   "Modern",
@@ -703,6 +735,9 @@ const categories = [
   "Compact",
 ];
 
+// =========================================================
+// ICON
+// =========================================================
 function Icon({ name, size = 18 }) {
   const icons = {
     home: (
@@ -712,6 +747,7 @@ function Icon({ name, size = 18 }) {
         <path d="M9 21v-6h6v6" />
       </>
     ),
+
     grid: (
       <>
         <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -720,12 +756,14 @@ function Icon({ name, size = 18 }) {
         <rect x="14" y="14" width="7" height="7" rx="1" />
       </>
     ),
+
     plan: (
       <>
         <rect x="3" y="4" width="18" height="16" rx="2" />
         <path d="M8 4v16M16 4v16M3 10h5M16 14h5" />
       </>
     ),
+
     ai: (
       <>
         <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
@@ -733,30 +771,36 @@ function Icon({ name, size = 18 }) {
         <circle cx="12" cy="12" r="4" />
       </>
     ),
+
     settings: (
       <>
         <circle cx="12" cy="12" r="3" />
         <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2 2-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V20h-3v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-2-2 .1-.1A1.7 1.7 0 0 0 7.2 15a1.7 1.7 0 0 0-1.6-1H5v-3h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 2-2 .1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V5h3v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 2 2-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v3h-.2a1.7 1.7 0 0 0-1.6 1Z" />
       </>
     ),
+
     search: (
       <>
         <circle cx="11" cy="11" r="7" />
         <path d="m20 20-4-4" />
       </>
     ),
+
     eye: (
       <>
         <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
         <circle cx="12" cy="12" r="2.5" />
       </>
     ),
+
     arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
+
     plus: (
       <>
         <path d="M12 5v14M5 12h14" />
       </>
     ),
+
     logout: (
       <>
         <path d="M10 17l5-5-5-5" />
@@ -782,6 +826,9 @@ function Icon({ name, size = 18 }) {
   );
 }
 
+// =========================================================
+// SIDEBAR
+// =========================================================
 function Sidebar({ navigate, logout }) {
   const items = [
     {
@@ -881,6 +928,9 @@ function Sidebar({ navigate, logout }) {
   );
 }
 
+// =========================================================
+// MAIN TEMPLATES PAGE
+// =========================================================
 export default function Templates() {
   const navigate = useNavigate();
 
@@ -902,12 +952,18 @@ export default function Templates() {
     });
   }, [category, search]);
 
+  // =========================================================
+  // LOGOUT
+  // =========================================================
   const logout = () => {
     localStorage.removeItem("dreamhouse_logged_in");
     localStorage.removeItem("dreamhouse_role");
     navigate("/login");
   };
 
+  // =========================================================
+  // USE TEMPLATE
+  // =========================================================
   const useTemplate = (template) => {
     navigate("/floor-plan-editor", {
       state: {
@@ -1094,6 +1150,9 @@ export default function Templates() {
   );
 }
 
+// =========================================================
+// TEMPLATE CARD
+// =========================================================
 function TemplateCard({ template, onUse, onDetails }) {
   return (
     <article className="group overflow-hidden rounded-3xl border border-[#dce2da] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#315348]/10">
@@ -1138,20 +1197,11 @@ function TemplateCard({ template, onUse, onDetails }) {
 
         {/* DETAILS */}
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <MiniDetail
-            value={template.bedrooms}
-            label="Bedrooms"
-          />
+          <MiniDetail value={template.bedrooms} label="Bedrooms" />
 
-          <MiniDetail
-            value={template.bathrooms}
-            label="Bathrooms"
-          />
+          <MiniDetail value={template.bathrooms} label="Bathrooms" />
 
-          <MiniDetail
-            value={template.kitchens}
-            label="Kitchen"
-          />
+          <MiniDetail value={template.kitchens} label="Kitchen" />
         </div>
 
         {/* BUTTONS */}
@@ -1175,20 +1225,22 @@ function TemplateCard({ template, onUse, onDetails }) {
   );
 }
 
+// =========================================================
+// MINI DETAIL
+// =========================================================
 function MiniDetail({ value, label }) {
   return (
     <div className="rounded-xl bg-[#f6f7f2] px-2 py-2.5 text-center">
-      <p className="text-[13px] font-semibold text-[#174d3d]">
-        {value}
-      </p>
+      <p className="text-[13px] font-semibold text-[#174d3d]">{value}</p>
 
-      <p className="mt-0.5 text-[8px] text-[#89938d]">
-        {label}
-      </p>
+      <p className="mt-0.5 text-[8px] text-[#89938d]">{label}</p>
     </div>
   );
 }
 
+// =========================================================
+// TEMPLATE MODAL
+// =========================================================
 function TemplateModal({ template, onClose, onUse }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#102e27]/50 p-4 backdrop-blur-sm">
@@ -1241,25 +1293,13 @@ function TemplateModal({ template, onClose, onUse }) {
 
           {/* STATS */}
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <ModalStat
-              label="Bedrooms"
-              value={template.bedrooms}
-            />
+            <ModalStat label="Bedrooms" value={template.bedrooms} />
 
-            <ModalStat
-              label="Bathrooms"
-              value={template.bathrooms}
-            />
+            <ModalStat label="Bathrooms" value={template.bathrooms} />
 
-            <ModalStat
-              label="Kitchen"
-              value={template.kitchens}
-            />
+            <ModalStat label="Kitchen" value={template.kitchens} />
 
-            <ModalStat
-              label="Floors"
-              value={template.floors}
-            />
+            <ModalStat label="Floors" value={template.floors} />
           </div>
 
           {/* FEATURES */}
@@ -1284,6 +1324,7 @@ function TemplateModal({ template, onClose, onUse }) {
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#e8f0e9] text-[9px] text-[#174d3d]">
                     ✓
                   </span>
+
                   {item}
                 </div>
               ))}
@@ -1295,6 +1336,9 @@ function TemplateModal({ template, onClose, onUse }) {
   );
 }
 
+// =========================================================
+// MODAL STAT
+// =========================================================
 function ModalStat({ label, value }) {
   return (
     <div className="rounded-2xl border border-[#dfe4dd] bg-white p-4 text-center">
@@ -1302,9 +1346,7 @@ function ModalStat({ label, value }) {
         {value}
       </p>
 
-      <p className="mt-1 text-[9px] text-[#7c8881]">
-        {label}
-      </p>
+      <p className="mt-1 text-[9px] text-[#7c8881]">{label}</p>
     </div>
   );
 }

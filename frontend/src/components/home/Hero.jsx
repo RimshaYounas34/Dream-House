@@ -16,7 +16,7 @@ import {
 import houseImage from "../../assets/hero-house.png";
 import threeDViewImage from "../../assets/ThreeDview.jpg";
 
-/* =========================================================
+/* =====================================================
    2D FLOOR PLAN CARD
 ========================================================= */
 
@@ -716,7 +716,7 @@ function DemoModal({ onClose }) {
             <Link
               to="/design-method"
               onClick={onClose}
-              className="inline-flex items-center gap-2 rounded-full bg-[#075d46] px-5 py-2.5 text-[12px] font-bold text-white shadow-[0_8px_20px_rgba(7,93,70,0.18)] transition hover:-translate-y-0.5 hover:bg-[#064d3a]"
+              className="inline-flex items-center gap-2 rounded-full bg-[#075d46] px-5 py-2.5 text-[12px] font-bold !text-white shadow-[0_8px_20px_rgba(7,93,70,0.18)] transition hover:-translate-y-0.5 hover:bg-[#064d3a]"
             >
               Start Planning
               <ArrowRight size={15} />
@@ -805,7 +805,7 @@ export default function Hero() {
 
               <Link
                 to="/design-method"
-                className="group inline-flex items-center gap-3 rounded-full bg-[#075d46] px-8 py-4 text-[14px] font-bold text-white shadow-[0_12px_30px_rgba(7,93,70,0.20)] transition-all duration-300 hover:-translate-y-1 hover:bg-[#064d3a]"
+                className="group inline-flex items-center gap-3 rounded-full bg-[#075d46] px-8 py-4 text-[14px] font-bold !text-white shadow-[0_12px_30px_rgba(7,93,70,0.20)] transition-all duration-300 hover:-translate-y-1 hover:bg-[#064d3a]"
               >
 
                 <span>
@@ -1032,3 +1032,4 @@ export default function Hero() {
     </>
   );
 }
+
