@@ -22,5 +22,10 @@
     "multer": "^2.0.2",
     "nodemailer": "^10.0.14",
     "pdfkit": "^0.17.2"
+  },
+  "overrides": {
+    "jwks-rsa": {
+      "jose": "4.15.9"
+    }
   }
 }
