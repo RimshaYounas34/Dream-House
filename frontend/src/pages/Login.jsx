@@ -10,8 +10,7 @@ import { auth } from "../firebase";
 import loginFloorplan from "../assets/login-floorplan.jpg";
 
 // LOCAL BACKEND API
-const API_URL = "http://localhost:7210/api";
-
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:7210/api";
 export default function Login() {
   const navigate = useNavigate();
 
