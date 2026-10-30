@@ -1,11 +1,22 @@
+
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-if (!serviceAccountPath) {
-  throw new Error("FIREBASE_SERVICE_ACCOUNT_PATH is not configured");
+const serviceAccountPath = path.join(
+  __dirname,
+  "serviceAccountKey.json"
+);
+
+if (!fs.existsSync(serviceAccountPath)) {
+  throw new Error(
+    `Firebase service account file not found: ${serviceAccountPath}`
+  );
 }
 
 const serviceAccount = JSON.parse(
